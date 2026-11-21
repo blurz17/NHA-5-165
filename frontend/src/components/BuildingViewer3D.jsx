@@ -8,6 +8,15 @@ export default function BuildingViewer3D({ features, prediction }) {
 
   const [shadingMode, setShadingMode] = useState('architectural'); // 'architectural' or 'thermal'
   const [autoRotate, setAutoRotate] = useState(true);
+  const autoRotateRef = useRef(true);
+
+  const handleToggleAutoRotate = () => {
+    setAutoRotate((prev) => {
+      const next = !prev;
+      autoRotateRef.current = next;
+      return next;
+    });
+  };
 
   // References to preserve Three.js state across renders
   const sceneRef = useRef(null);
@@ -129,7 +138,7 @@ export default function BuildingViewer3D({ features, prediction }) {
     // 9. Animation Loop
     const animate = () => {
       animFrameId.current = requestAnimationFrame(animate);
-      if (autoRotate && !isDragging.current) {
+      if (autoRotateRef.current && !isDragging.current) {
         cameraRotation.current.theta += 0.0025;
         updateCameraPosition();
       }
@@ -249,7 +258,7 @@ export default function BuildingViewer3D({ features, prediction }) {
 
           {/* Auto Rotate Toggle */}
           <button
-            onClick={() => setAutoRotate(!autoRotate)}
+            onClick={handleToggleAutoRotate}
             title="Toggle Auto-Rotation"
             style={{
               padding: '5px 12px',
