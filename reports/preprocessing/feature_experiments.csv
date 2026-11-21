@@ -1,0 +1,6 @@
+Experiment,CV R²,CV RMSE
+"New features (Wall_Surface_Ratio, Glazing_x_Height)",0.9271,2.698
+New features + drop Surface_Area,0.9271,2.698
+Baseline (original features),0.9196,2.831
+Drop Surface_Area only,0.9196,2.831
+Drop Surface_Area + Roof_Area,0.9167,2.882

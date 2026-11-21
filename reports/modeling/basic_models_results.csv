@@ -1,0 +1,7 @@
+Model,Target,MAE,RMSE,R²
+Linear Regression,Heating_Load,1.8728,2.8002,0.9248
+Linear Regression,Cooling_Load,2.1165,3.0471,0.8998
+Decision Tree,Heating_Load,0.4071,0.5873,0.9967
+Decision Tree,Cooling_Load,1.3253,2.2609,0.9448
+Random Forest,Heating_Load,0.3445,0.4908,0.9977
+Random Forest,Cooling_Load,1.1632,1.9027,0.9609

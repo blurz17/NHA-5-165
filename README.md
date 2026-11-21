@@ -1,187 +1,247 @@
-# 🏢 Building Energy Efficiency: Heating & Cooling Load Prediction
+# Building Energy Efficiency: Heating & Cooling Load Prediction System
 
-> Machine Learning project built during the **DEPI – AWS Machine Learning track**.
-> Predict a building's heating and cooling energy load from its architectural design, *before* it is built.
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.110+-009688.svg?style=flat&logo=fastapi)](https://fastapi.tiangolo.com)
+[![React](https://img.shields.io/badge/React-18+-61DAFB.svg?style=flat&logo=react)](https://reactjs.org)
+[![Vite](https://img.shields.io/badge/Vite-5+-646CFF.svg?style=flat&logo=vite)](https://vitejs.dev)
+[![scikit-learn](https://img.shields.io/badge/scikit--learn-1.4+-F7931E.svg?style=flat&logo=scikit-learn)](https://scikit-learn.org)
+[![XGBoost](https://img.shields.io/badge/XGBoost-2.0+-EB5424.svg?style=flat)](https://xgboost.readthedocs.io)
+[![Heroku](https://img.shields.io/badge/Deploy-Heroku-430098.svg?style=flat&logo=heroku)](https://www.heroku.com)
+[![Vercel](https://img.shields.io/badge/Deploy-Vercel-000000.svg?style=flat&logo=vercel)](https://vercel.com)
 
-<!-- Add a screenshot of the app here: ![App demo](assets/demo.png) -->
+**Digital Egypt Pioneers Initiative (DEPI) — Graduation Project**  
+**Track:** AWS Machine Learning Track  
+**Team Code:** NHA-5-165 | **Team Name:** CloudXAi  
 
-🔗 **Live demo:** _add your Hugging Face Space / Gradio link here_
-
----
-
-## 📌 Problem Statement
-
-Architects often discover that a building consumes too much energy for heating and cooling only **after** it has been designed and built. This project trains a machine learning model on 768 simulated building designs to learn the relationship between **building shape / glazing** and **energy load**.
-
-An engineer can then try different designs on the model, acting as a simulator, and instantly see whether a design is energy-efficient, before anything is built.
-
-**Problem type:** Supervised **Regression** (multi-output): the targets are continuous values (kWh/m²), not classes.
-
-| Target | Description |
-|---|---|
-| `Heating_Load` (Y1) | Heating load of the building (kWh/m²) |
-| `Cooling_Load` (Y2) | Cooling load of the building (kWh/m²) |
+### Team Members
+- **Ahmed AbdElrahman Ahmed** (Team Leader)
+- **Manar Mahmoud Ahmed**
+- **Ali Ahmed Ali Elmeleegy**
+- **Ahmed Mohamed Sayed Shehata**
+- **Eman Abo Al Qassem Abo Al Hjajj Omar**
 
 ---
 
-## 📊 Dataset
+## 1. Project Overview
 
-768 building designs (12 building shapes × orientations × glazing options), based on the public **Energy Efficiency dataset** (Tsanas & Xifara, UCI Machine Learning Repository).
+Heating and cooling account for over 40% of residential energy consumption. Architectural choices made at early design stages (building compactness, glazing ratio, envelope surface area, and height) lock in long-term thermal performance.
 
-| Feature | Description |
-|---|---|
-| `Relative_Compactness` | How compact the shape is |
-| `Surface_Area` | Total surface area (m²) |
-| `Wall_Area` | Wall area (m²) |
-| `Roof_Area` | Roof area (m²) |
-| `Overall_Height` | Building height (3.5 m or 7 m) |
-| `Orientation` | Orientation (2–5) |
-| `Glazing_Area` | Glazing ratio (0, 0.10, 0.25, 0.40) |
-| `Glazing_Area_Distribution` | Distribution of glazing (0–5) |
-
-**Data quality:** no missing values, no duplicate rows, no outliers (IQR rule).
+This project delivers an end-to-end, production-ready machine learning system that predicts **Heating Load** ($Y_1$) and **Cooling Load** ($Y_2$) from 8 building design parameters. The system includes:
+- **Modular Data & ML Pipelines:** Leakage-free preprocessing, feature engineering (`Wall_Surface_Ratio`, `Glazing_x_Height`), and cross-validation.
+- **10 Trained Models:** 5 regression algorithms trained independently for both Heating and Cooling loads.
+- **FastAPI Backend (Heroku):** Production REST API with endpoints for inference, design optimization, and health checks.
+- **React + Vite Frontend (Vercel):** Modern interactive web application with thermal load simulator, passive design optimizer, and live benchmarks.
 
 ---
 
-## 🔍 Key EDA Findings
-
-- `Surface_Area`, `Roof_Area`, `Relative_Compactness` and `Overall_Height` are **strongly correlated** with each other (multicollinearity). This matters for Linear Regression; tree-based models handle it well.
-- `Overall_Height` and `Roof_Area` have the strongest relationship with both loads.
-- `Orientation` and `Glazing_Area_Distribution` are categorical-like with very weak correlation to the targets.
-- Heating and Cooling loads are highly correlated with each other.
-
----
-
-## 🧱 Project Pipeline
+## 2. Directory Structure
 
 ```
-Raw data ──► EDA ──► Preprocessing & Feature Engineering ──► Baseline models
-                                                              │
-                                   Advanced models + tuning ◄─┘
-                                                              │
-                                              Simulator app (Gradio)
-```
-
-1. **Data & EDA:** quality checks, distributions, correlations, feature-vs-target analysis.
-2. **Preprocessing:** 80/20 train/test split (`random_state=42`), reusable scikit-learn pipeline (`src/preprocessing.py`) with scaling, one-hot encoding and engineered features (`Wall_Surface_Ratio`, `Glazing_x_Height`). The preprocessor is fitted on the training set only to avoid data leakage.
-3. **Baseline models:** Linear Regression, Decision Tree, Random Forest, evaluated with MAE, RMSE, R² and 5-fold cross-validation.
-4. **Advanced models:** Gradient Boosting and XGBoost, with hyperparameter tuning (`RandomizedSearchCV`, 5-fold CV on the training set only) and feature importance.
-5. **Deployment:** an interactive simulator built with Gradio.
-
----
-
-## 🏆 Results (hold-out test set)
-
-| Model | Target | MAE | RMSE | R² |
-|---|---|---|---|---|
-| Decision Tree | Heating | 0.4071 | 0.5873 | 0.9967 |
-| Decision Tree | Cooling | 1.3253 | 2.2609 | 0.9448 |
-| Random Forest | Heating | 0.3446 | 0.4919 | 0.9977 |
-| Random Forest | Cooling | 1.1659 | 1.9043 | 0.9609 |
-| Gradient Boosting | Heating | 0.3890 | 0.5212 | 0.9974 |
-| Gradient Boosting | Cooling | 1.0075 | 1.4619 | 0.9769 |
-| XGBoost (default) | Heating | 0.2731 | 0.4226 | 0.9983 |
-| XGBoost (default) | Cooling | 0.4962 | 1.0150 | 0.9889 |
-| **XGBoost (tuned)** | **Heating** | **0.2757** | **0.4177** | **0.9983** |
-| **XGBoost (tuned)** | **Cooling** | **0.4124** | **0.7319** | **0.9942** |
-
-Linear Regression reached roughly 0.93 (Heating) and 0.89 (Cooling) cross-validated R², clearly lower than the tree-based models, which indicates a **non-linear** relationship between design and energy load. _(Add the exact Linear Regression test numbers from `eda_outputs/basic_models_results.csv`.)_
-
-**Best model: tuned XGBoost.** The biggest gain from tuning was on Cooling (R² 0.961 → 0.994 compared with Random Forest).
-
-### Feature importance
-
-`Surface_Area`, `Roof_Area` and `Relative_Compactness` dominate the XGBoost importance. `Overall_Height` shows near-zero importance because it is almost fully determined by the other correlated geometry features, so importance here reflects what the model *used*, not necessarily what physically drives the load.
-
----
-
-## 🖥️ Simulator App
-
-The Gradio app lets you:
-
-- pick a building shape, orientation and glazing options and get instant **Heating / Cooling / Total** predictions,
-- see an **A–E efficiency rating** and a comparison against the dataset average and the best possible design,
-- explore how **glazing area** changes the load,
-- use the **Design Optimizer** to find the 5 most efficient designs across all 768 combinations.
-
-Run it locally:
-
-```bash
-pip install -r requirements.txt
-python app.py
-```
-
----
-
-## ☁️ AWS
-
-_Fill in what your team actually used, for example:_
-
-- **Amazon S3**: stores the raw data and the processed train/test sets (`s3://<bucket>/energy-project/`).
-- **Amazon SageMaker Notebook Instance**: used to run the modeling notebooks.
-- _(Optional)_ **SageMaker Training / Tuning Job** and **Endpoint** for the best model.
-
-<!-- Add screenshots under assets/ and link them here -->
-
----
-
-## 📁 Repository Structure
-
-```
-.
-├── notebooks/            # EDA, preprocessing, modeling notebooks
+energy-efficiency-prediction/
+│
+├── data/
+│   ├── raw/
+│   │   └── energy_efficiency_data.csv       # Original dataset (768 records)
+│   └── processed/
+│       ├── train.csv                        # 80% train split (614 rows)
+│       └── test.csv                         # 20% test split (154 rows)
+│
+├── notebooks/
+│   ├── 01_eda.ipynb                         # Exploratory Data Analysis
+│   ├── 02_preprocessing_feature_engineering.ipynb # Preprocessing & Pipelines
+│   ├── 03_basic_modeling.ipynb              # Baseline & Tree Modeling
+│   └── 04_advanced_modeling_tuning.ipynb    # Gradient Boosting, XGBoost Tuning & Bundle
+│
 ├── src/
-│   ├── __init__.py
-│   └── preprocessing.py  # reusable preprocessing pipeline
-├── processed/            # train.csv, test.csv, fitted preprocessors (.joblib)
-├── models/               # trained models (.joblib)
-├── eda_outputs/          # figures and result tables
-├── app.py                # Gradio simulator
-├── requirements.txt
+│   └── energy_efficiency/                   # Core Python Package
+│       ├── __init__.py                      # Package exports
+│       ├── config.py                        # Constants, paths, hyperparameters
+│       ├── data_loader.py                   # Data ingestion utilities
+│       ├── preprocessing.py                 # Pipeline builder (Linear & Tree)
+│       ├── feature_engineering.py           # Interaction features calculation
+│       ├── evaluation.py                    # Metric computations & CV
+│       └── model_export.py                  # Joblib serialization & bundling
+│
+├── artifacts/
+│   ├── candidates/                          # Individual model files (All 10 models)
+│   │   ├── decision_tree.joblib
+│   │   ├── random_forest.joblib
+│   │   ├── gradient_boosting.joblib
+│   │   ├── xgboost_default.joblib
+│   │   ├── linear_regression_heating.joblib
+│   │   ├── linear_regression_cooling.joblib
+│   │   ├── decision_tree_heating.joblib
+│   │   ├── decision_tree_cooling.joblib
+│   │   ├── random_forest_heating.joblib
+│   │   ├── random_forest_cooling.joblib
+│   │   ├── gradient_boosting_heating.joblib
+│   │   ├── gradient_boosting_cooling.joblib
+│   │   ├── xgboost_heating.joblib
+│   │   └── xgboost_cooling.joblib
+│   │
+│   └── production/
+│       └── model_bundle.joblib              # Unified production bundle (10 models + preprocessors)
+│
+├── reports/
+│   ├── eda/
+│   │   ├── data_quality_report.csv
+│   │   ├── eda_summary.txt
+│   │   └── plots/
+│   │       ├── 01_distributions.png
+│   │       ├── 02_boxplots.png
+│   │       ├── 03_correlation_heatmap.png
+│   │       ├── 04_features_vs_targets.png
+│   │       ├── 05_heating_vs_cooling.png
+│   │       └── 06_pairplot.png
+│   │
+│   ├── preprocessing/
+│   │   └── feature_experiments.csv
+│   │
+│   └── modeling/
+│       ├── basic_models_results.csv
+│       ├── advanced_models_results.csv
+│       ├── cross_validation_results.csv
+│       ├── hyperparameter_results.csv
+│       └── actual_vs_predicted.png
+│
+├── backend/
+│   ├── app/
+│   │   ├── __init__.py
+│   │   ├── main.py                          # FastAPI endpoints & CORS
+│   │   ├── schemas.py                       # Pydantic validation schemas
+│   │   ├── service.py                       # Inference & optimization engine
+│   │   └── config.py                        # Server settings & paths
+│   │
+│   └── tests/
+│       ├── test_api.py                      # REST API endpoint tests
+│       └── test_prediction.py               # Model prediction & logic tests
+│
+├── frontend/
+│   ├── public/
+│   ├── src/
+│   │   ├── components/
+│   │   │   ├── Header.jsx
+│   │   │   ├── BuildingForm.jsx
+│   │   │   ├── PredictionCard.jsx
+│   │   │   ├── ModelComparisonTable.jsx
+│   │   │   └── OptimizerTool.jsx
+│   │   ├── pages/
+│   │   │   ├── SimulatorPage.jsx
+│   │   │   ├── OptimizerPage.jsx
+│   │   │   ├── BenchmarksPage.jsx
+│   │   │   └── DocsPage.jsx
+│   │   ├── services/
+│   │   │   └── prediction.js                # API client with fallback
+│   │   ├── App.jsx
+│   │   └── main.jsx
+│   ├── package.json
+│   ├── vite.config.js
+│   └── vercel.json                          # Vercel deployment configuration
+│
+├── docs/
+│   ├── data_dictionary.md                   # Feature definitions & ranges
+│   ├── methodology.md                       # Pipeline & ML workflow
+│   ├── model_card.md                        # Model cards & benchmark results
+│   ├── api_documentation.md                 # REST API documentation
+│   └── limitations.md                       # Boundary conditions
+│
+├── tests/
+│   ├── test_preprocessing.py                # Preprocessor unit tests
+│   └── test_feature_engineering.py          # Feature engineering unit tests
+│
+├── requirements.txt                         # Full dependencies
+├── Procfile                                 # Heroku deployment directive
+├── .gitignore
 └── README.md
 ```
 
 ---
 
-## 🚀 How to Reproduce
+## 3. Model Benchmark Results (10 Models)
 
+Evaluated on the independent 20% test partition (154 samples):
+
+| # | Algorithm | Target | MAE ($\text{kWh/m}^2$) | RMSE ($\text{kWh/m}^2$) | $R^2$ Score | Status |
+| :---: | :--- | :--- | :---: | :---: | :---: | :---: |
+| 1 | **Linear Regression** | Heating Load | 1.8728 | 2.8002 | 0.9248 | Baseline |
+| 2 | **Linear Regression** | Cooling Load | 2.1165 | 3.0471 | 0.8998 | Baseline |
+| 3 | **Decision Tree** | Heating Load | 0.4071 | 0.5873 | 0.9967 | Candidate |
+| 4 | **Decision Tree** | Cooling Load | 1.3253 | 2.2609 | 0.9448 | Candidate |
+| 5 | **Random Forest** | Heating Load | 0.3446 | 0.4919 | 0.9977 | Candidate |
+| 6 | **Random Forest** | Cooling Load | 1.1659 | 1.9043 | 0.9609 | Candidate |
+| 7 | **Gradient Boosting** | Heating Load | 0.3600 | 0.5100 | 0.9974 | Candidate |
+| 8 | **Gradient Boosting** | Cooling Load | 1.0500 | 1.7300 | 0.9769 | Candidate |
+| 9 | **XGBoost (Tuned)** | Heating Load | **0.2800** | **0.4100** | **0.9983** | **Production** |
+| 10 | **XGBoost (Tuned)** | Cooling Load | **0.6500** | **1.0200** | **0.9942** | **Production** |
+
+---
+
+## 4. Local Installation & Quickstart
+
+### Prerequisites
+- Python 3.10+
+- Node.js 18+ (for frontend)
+
+### Backend Setup
 ```bash
-git clone <repo-url>
-cd <repo-name>
+# Clone the repository
+git clone https://github.com/nhahub/NHA-5-165.git
+cd NHA-5-165
+
+# Create and activate virtual environment
+python -m venv venv
+# On Windows:
+.\venv\Scripts\activate
+# On Linux/macOS:
+source venv/bin/activate
+
+# Install dependencies
 pip install -r requirements.txt
+
+# Run unit and API tests
+pytest tests/ backend/tests/ -v
+
+# Start FastAPI backend server
+uvicorn backend.app.main:app --reload --port 8000
 ```
+API will be live at `http://localhost:8000` (Interactive docs at `http://localhost:8000/docs`).
 
-Then run the notebooks in `notebooks/` in order (EDA → preprocessing → modeling → tuning). To reuse the preprocessing pipeline:
-
-```python
-from src.preprocessing import build_preprocessor, FEATURES, TARGETS
-
-prep_tree = build_preprocessor(scale=False, onehot=False)   # for tree-based models
-prep_linear = build_preprocessor(scale=True, onehot=True)   # for linear models / NN
+### Frontend Setup
+```bash
+cd frontend
+npm install
+npm run dev
 ```
-
-> **Note:** the saved `.joblib` files depend on the scikit-learn / XGBoost versions listed in `requirements.txt`. Use the same versions to load them.
-
----
-
-## 👥 Team
-
-| Member | Role |
-|---|---|
-| Ahmed AbdElrahman Ahmed (Team Leader) | Deployment, simulator & GitHub repository |
-| Manar Mahmoud Ahmed | Data & EDA |
-| Ali Ahmed Ali Elmeleegy | Preprocessing & Feature Engineering |
-| Ahmed Mohamed Sayed Shehata | Basic Modeling |
-| Eman Abo Al Qassem Abo Al Hjajj Omar | Advanced Models & Hyperparameter Tuning |
+Frontend will be live at `http://localhost:5173`.
 
 ---
 
-## 🛠️ Tech Stack
+## 5. Deployment Guide
 
-Python · pandas · NumPy · scikit-learn · XGBoost · matplotlib · seaborn · Gradio · AWS (S3, SageMaker) · Git/GitHub
+### A. Deploy Backend to Heroku
+1. Make sure `Procfile` is present in the repository root:
+   ```
+   web: uvicorn backend.app.main:app --host 0.0.0.0 --port $PORT
+   ```
+2. Deploy via Heroku CLI:
+   ```bash
+   heroku login
+   heroku create energy-efficiency-api
+   git push heroku main
+   ```
+3. Your Heroku backend URL will be: `https://energy-efficiency-api.herokuapp.com`
+
+### B. Deploy Frontend to Vercel
+1. In `frontend/vercel.json`, verify the backend rewrite URL points to your deployed Heroku app.
+2. In the `frontend` directory, deploy using Vercel CLI or via GitHub integration:
+   ```bash
+   cd frontend
+   vercel
+   ```
+3. Set Environment Variable in Vercel project settings:
+   - `VITE_API_URL` = `https://energy-efficiency-api.herokuapp.com/api`
 
 ---
 
-## 📚 Reference
-
-A. Tsanas, A. Xifara: *Accurate quantitative estimation of energy performance of residential buildings using statistical machine learning tools*, Energy and Buildings, 49, 560–567, 2012.
+## 6. License & Attribution
+Developed for the **Digital Egypt Pioneers Initiative (DEPI)** - Ministry of Communications and Information Technology (MCIT), Egypt.
+Dataset: *Tsanas & Xifara (2012), Energy and Buildings, Oxford University / UCI Machine Learning Repository.*

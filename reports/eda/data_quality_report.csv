@@ -1,0 +1,11 @@
+column,dtype,missing,unique,min,max
+Relative_Compactness,float64,0,12,0.62,0.98
+Surface_Area,float64,0,12,514.5,808.5
+Wall_Area,float64,0,7,245.0,416.5
+Roof_Area,float64,0,4,110.25,220.5
+Overall_Height,float64,0,2,3.5,7.0
+Orientation,int64,0,4,2.0,5.0
+Glazing_Area,float64,0,4,0.0,0.4
+Glazing_Area_Distribution,int64,0,6,0.0,5.0
+Heating_Load,float64,0,586,6.01,43.1
+Cooling_Load,float64,0,636,10.9,48.03
