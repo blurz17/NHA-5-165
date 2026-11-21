@@ -1,119 +1,159 @@
 # Software Requirements Specification (SRS)
 **Standard:** IEEE Std 830-1998 Format  
-**Project Title:** AI-Based Building Energy Performance Evaluation & Design Optimization  
+**Project Title:** Building Energy Efficiency: Heating & Cooling Load Prediction  
 **Team Name:** CloudXAi  
 **Team Code:** NHA-5-165  
-**Submission Date:** October 2026  
-**Document Version:** 1.0  
+**Submission Date:** November 2026  
+**Document Version:** 2.0 (Reconstructed)  
 
 ---
 
 ## 1. Introduction
 
 ### 1.1 Purpose
-This Software Requirements Specification (SRS) document details the complete functional and non-functional requirements for the **CloudXAi** platform. It provides the authoritative engineering specification for developers, machine learning engineers, quality assurance testers, and academic evaluators within the Digital Egypt Pioneers Initiative (DEPI).
+This Software Requirements Specification (SRS) establishes the authoritative engineering requirements for the **Building Energy Efficiency Platform**. It specifies the functional behaviors, performance thresholds, architectural constraints, and interfaces governing data ingestion, preprocessing, machine learning model benchmarking, hyperparameter tuning, web-based simulator deployment, and AWS cloud storage.
 
 ### 1.2 Scope of the System
-**CloudXAi** is a data-driven, machine-learning-powered decision support platform that evaluates architectural designs, forecasts operational time-series building energy consumption, explains physical drivers through XAI, and discovers constrained multi-objective Pareto-optimal design configurations. The platform operates under a **Dual-Mode Architecture** running both locally on developer workstations (DuckDB + Parquet Lakehouse + FastAPI + Streamlit) and in the AWS Cloud (S3 + Glue + Athena + SageMaker/ECS).
+The platform serves as an intelligent decision-support surrogate simulator for sustainable architects and HVAC consultants. It predicts **Heating Load ($Y_1$)** and **Cooling Load ($Y_2$)** in $\text{kWh/m}^2$ directly from building envelope specifications before construction commences. By replacing slow whole-building physics simulations (e.g., EnergyPlus) with high-fidelity gradient-boosted decision trees (XGBoost), the system reduces evaluation latency from hours to milliseconds while retaining over 99% accuracy ($R^2 > 0.99$).
 
 ### 1.3 Definitions, Acronyms, and Abbreviations
 * **BEM:** Building Energy Modeling
+* **CV:** Cross-Validation (specifically 5-fold CV)
+* **DEPI:** Digital Egypt Pioneers Initiative
 * **DoD:** Definition of Done
-* **DOE:** United States Department of Energy
-* **Dual-Mode:** Architecture capable of running either locally with zero cloud dependencies or fully on AWS Cloud.
-* **HDD / CDD:** Heating Degree Days / Cooling Degree Days
-* **IDF:** Input Data File (EnergyPlus simulation model format)
-* **KPI:** Key Performance Indicator
-* **NSGA-II:** Non-dominated Sorting Genetic Algorithm II
-* **NMBE:** Normalized Mean Bias Error (ASHRAE Guideline 14 metric)
-* **CV(RMSE):** Coefficient of Variation of the Root Mean Square Error
-* **RTM:** Requirements Traceability Matrix
-* **SHAP:** SHapley Additive exPlanations
-* **WWR:** Window-to-Wall Ratio (envelope glazing percentage)
+* **EDA:** Exploratory Data Analysis
+* **Gradio:** Open-source Python library for rapid machine learning web application development
+* **IQR:** Interquartile Range
+* **MAE:** Mean Absolute Error
+* **MEP:** Mechanical, Electrical, and Plumbing engineering
+* **ML:** Machine Learning
+* **OLS:** Ordinary Least Squares
+* **$R^2$:** Coefficient of Determination
+* **RMSE:** Root Mean Squared Error
+* **S3:** Amazon Simple Storage Service
+* **SRS:** Software Requirements Specification
+* **WWR:** Window-to-Wall Ratio (Glazing Area Ratio)
+* **XGBoost:** eXtreme Gradient Boosting
+
+### 1.4 References
+1. Tsanas, A., & Xifara, A. (2012). *Accurate quantitative estimation of energy performance of residential buildings using statistical machine learning tools.* Energy and Buildings, 49, 560–567.
+2. IEEE Std 830-1998: *IEEE Recommended Practice for Software Requirements Specifications.*
+3. DEPI Graduation Project Deliverable Guidelines (AWS Machine Learning Track, 2026).
 
 ---
 
 ## 2. Overall Description
 
 ### 2.1 Product Perspective & Context
-CloudXAi serves as a bridge between early-stage architectural drafting (CAD/BIM) and slow, detailed physics-based thermodynamic simulation (EnergyPlus). It is not a replacement for legal engineering certifications; rather, it is an exploratory sandbox that allows architects and energy consultants to evaluate thousands of candidate configurations in seconds and optimize designs before construction.
+The platform operates as a standalone surrogate simulator and early-stage design optimizer. Rather than running exhaustive 3D finite-element thermodynamic calculations during initial design meetings, architects input high-level envelope parameters to receive instantaneous heating and cooling estimates, efficiency ratings (A–E), sensitivity trends, and optimal design configurations.
 
 ```
 ┌────────────────────────────────────────────────────────────────────────┐
-│                        CLOUDXAI SYSTEM CONTEXT                         │
+│                        SYSTEM CONTEXT DIAGRAM                          │
 └───────────────────────────────────┬────────────────────────────────────┘
                                     │
     ┌───────────────────────────────┼───────────────────────────────┐
     ↓                               ↓                               ↓
-[Architectural Design]    [Smart Meter Telemetry]         [Weather Data]
-• Relative Compactness    • Electricity (kWh)             • Temperature
-• Glazing Ratio (WWR)     • Chilled Water                 • Solar Radiation
-• Orientation & Surface   • Steam / Hot Water             • Humidity & Wind
-    │                               │                               │
-    └───────────────────────────────┼───────────────────────────────┘
-                                    ↓
-                 ┌──────────────────────────────────────┐
-                 │     DUAL-MODE DATA LAKEHOUSE         │
-                 │  • Local: Parquet + DuckDB           │
-                 │  • Cloud: AWS S3 + Glue + Athena     │
-                 └──────────────────┬───────────────────┘
-                                    ↓
-                 ┌──────────────────────────────────────┐
-                 │       ANALYTICS & ML ENGINES         │
-                 │  • ML Surrogate (Thermal Loads)      │
-                 │  • Time-Series Operational Forecaster│
-                 │  • NSGA-II Multi-Objective Optimizer │
-                 │  • SHAP TreeExplainer Diagnostic     │
-                 └──────────────────┬───────────────────┘
-                                    ↓
-                 ┌──────────────────────────────────────┐
-                 │          PRESENTATION TIER           │
-                 │  • FastAPI REST Endpoints            │
-                 │  • Interactive Streamlit Dashboard   │
-                 │  • Automated PDF Diagnostic Reports  │
-                 └──────────────────────────────────────┘
+[Architectural Features]  [Preprocessing Pipeline]    [Machine Learning Models]
+• Relative Compactness    • 80/20 Train/Test Split    • Linear Regression (Baseline)
+• Surface Area (m²)       • Wall_Surface_Ratio        • Decision Tree Regressor
+• Wall Area (m²)          • Glazing_x_Height          • Random Forest Regressor
+• Roof Area (m²)          • StandardScaler (Numeric)  • Gradient Boosting
+• Overall Height (m)      • OneHotEncoder (Categoric) • Tuned XGBoost (Primary)
+• Orientation (2-5)       └─────────────┬─────────────┘
+• Glazing Area (0-0.4)                  │
+• Glazing Distribution                  ▼
+                          ┌───────────────────────────┐
+                          │  Gradio Web Simulator     │
+                          │  - Live Thermal KPIs      │
+                          │  - A-E Efficiency Grade   │
+                          │  - Glazing Sensitivity    │
+                          │  - 768-Design Optimizer   │
+                          └─────────────┬─────────────┘
+                                        │
+                                        ▼
+                          [ AWS Cloud Infrastructure ]
+                          • Amazon S3 Artifacts Bucket
+                          • Amazon SageMaker Notebook
 ```
 
-### 2.2 User Characteristics
-The system caters to technical domain specialists (Architects, MEP Engineers, Facility Managers) and software evaluators. The user interface prioritizes clarity, intuitive parameter sliders, interactive 2D/3D visualizations, and plain-English physical explanations.
+### 2.2 Product Functions
+1. **Automated Data Quality Audit:** Validates raw dataset against nulls, duplicates, and statistical bounds.
+2. **Leak-Free Preprocessing:** Executes train/test splitting and builds modular sklearn transformers (`src/preprocessing.py`).
+3. **Surrogate Model Inference:** Predicts Heating and Cooling loads in $< 50\text{ ms}$.
+4. **Energy Efficiency Rating:** Categorizes total load into 5 color-coded quintile ratings (A = lowest energy, E = highest energy).
+5. **Dynamic Sensitivity Profiling:** Plots continuous load impact across varying glazing percentages.
+6. **Combinatorial Design Optimization:** Evaluates all 768 archetypes to discover top-5 energy-efficient configurations.
 
-### 2.3 General Constraints
-* The system shall execute locally without internet access or mandatory cloud costs when `EXECUTION_MODE=local`.
-* Machine learning surrogate models must run on standard commodity CPU hardware without requiring dedicated enterprise GPU clusters.
-* All tabular data must be stored in Apache Parquet format to guarantee high query throughput.
+### 2.3 User Classes and Characteristics
+* **Sustainable Building Architects:** Require an intuitive visual UI, pre-populated geometry dimensions, and rapid What-If scenario feedback.
+* **MEP / Energy Consultants:** Require precise numerical outputs (MAE, RMSE), comparative benchmark bars against dataset averages, and optimizer filtering.
+* **MLOps / Cloud Engineers:** Require reproducible notebooks, serialized joblib pipelines, and versioned S3 storage.
+* **Academic Evaluators:** Require complete documentation, transparent cross-validation, and rigorous code organization.
+
+### 2.4 Operating Environment
+* **Local Developer Environment:** Python 3.11+, Windows 10/11, macOS, or Linux.
+* **Web UI Runtime:** Gradio 6.x executing locally on `http://127.0.0.1:7860` or hosted remotely.
+* **Cloud Platform:** Amazon Web Services (AWS) using Amazon S3 for artifact storage and Amazon SageMaker Notebook Instances for model training.
+
+### 2.5 Design and Implementation Constraints
+* Models must be trained strictly on the 768 validated residential buildings from the Tsanas & Xifara dataset.
+* Dependencies must strictly align with `requirements.txt` to avoid serialization mismatches.
+* Preprocessor transformers must be fitted exclusively on the 80% training partition.
 
 ---
 
-## 3. Specific Requirements Reference
+## 3. Specific Requirements
 
-The detailed specific requirements are cataloged in our dedicated modular specifications:
-* **Stakeholder Analysis:** Refer to [Stakeholder_Analysis.md](file:///e:/MY-PROJECTS/AWS.ML.Project/Documentations/03_Requirements_Gathering/Stakeholder_Analysis.md) for SH-01 through SH-05.
-* **User Stories & Use Cases:** Refer to [User_Stories_and_Use_Cases.md](file:///e:/MY-PROJECTS/AWS.ML.Project/Documentations/03_Requirements_Gathering/User_Stories_and_Use_Cases.md) for US-01 through US-14 and UC-01 through UC-12.
-* **Functional Requirements:** Refer to [Functional_Requirements.md](file:///e:/MY-PROJECTS/AWS.ML.Project/Documentations/03_Requirements_Gathering/Functional_Requirements.md) for FR-ENG-01–05, FR-ML-01–05, FR-OPT-01–04, FR-XAI-01–03, and FR-SYS-01–05.
-* **Non-Functional Requirements:** Refer to [Non_Functional_Requirements.md](file:///e:/MY-PROJECTS/AWS.ML.Project/Documentations/03_Requirements_Gathering/Non_Functional_Requirements.md) for NFR-01 through NFR-10.
+### 3.1 External Interface Requirements
+* **User Interface:** Web application rendered by Gradio containing 4 tabs: "🎛️ Simulator", "🎯 Design Optimizer", "📊 Model Performance", and "ℹ️ About".
+* **Software Interfaces:**
+  * Python standard library (`os`, `json`, `warnings`, `shutil`).
+  * Core ML libraries: `pandas`, `numpy`, `scikit-learn`, `xgboost`, `joblib`, `matplotlib`, `seaborn`, `gradio`.
+  * AWS interfaces: AWS CLI / Boto3 for S3 bucket synchronization.
+
+### 3.2 Functional Requirements
+
+#### 3.2.1 Data Management & Feature Engineering
+* **REQ-DATA-1:** Ingest 768 rows with 8 features (`Relative_Compactness`, `Surface_Area`, `Wall_Area`, `Roof_Area`, `Overall_Height`, `Orientation`, `Glazing_Area`, `Glazing_Area_Distribution`) and 2 targets (`Heating_Load`, `Cooling_Load`).
+* **REQ-DATA-2:** Compute $\text{Wall\_Surface\_Ratio} = \frac{\text{Wall\_Area}}{\text{Surface\_Area}}$ and $\text{Glazing\_x\_Height} = \text{Glazing\_Area} \times \text{Overall\_Height}$.
+* **REQ-DATA-3:** Partition data into 80% training (614 rows) and 20% test (154 rows) using fixed `random_state=42`.
+* **REQ-DATA-4:** Provide `build_preprocessor(scale, onehot, engineer)` in `src/preprocessing.py`.
+
+#### 3.2.2 Model Training and Benchmarking
+* **REQ-MOD-1:** Train baseline models (Linear Regression, Decision Tree, Random Forest) evaluated via 5-fold cross-validation.
+* **REQ-MOD-2:** Train advanced models (Gradient Boosting, XGBoost) with hyperparameter tuning via `RandomizedSearchCV`.
+* **REQ-MOD-3:** Verify holdout test set performance meets or exceeds target KPIs:
+  * Decision Tree: Heating $R^2 \ge 0.996$, Cooling $R^2 \ge 0.944$.
+  * Random Forest: Heating $R^2 \ge 0.997$, Cooling $R^2 \ge 0.960$.
+  * Tuned XGBoost: Heating $R^2 \ge 0.998$, Cooling $R^2 \ge 0.994$.
+* **REQ-MOD-4:** Serialize trained models to `models/xgb_heating_load.joblib` and `models/xgb_cooling_load.joblib`.
+
+#### 3.2.3 Simulator Web Application
+* **REQ-UI-1:** The simulator must auto-fill geometry features based on the chosen canonical building shape.
+* **REQ-UI-2:** Render 4 KPI cards: Heating Load, Cooling Load, Total Load, and Efficiency Rating (A–E).
+* **REQ-UI-3:** Generate dynamic comparison bar chart and glazing sensitivity plot.
+* **REQ-UI-4:** Provide an automated Design Optimizer filtering across objective, maximum glazing, and building height.
+
+### 3.3 Performance & Non-Functional Requirements
+* **REQ-PERF-1:** Single-query inference latency $< 50\text{ ms}$.
+* **REQ-PERF-2:** Optimizer evaluation of all 768 designs $< 500\text{ ms}$.
+* **REQ-REL-1:** 100% deterministic reproducibility when seeded with `random_state=42`.
+* **REQ-PORT-1:** Pinned dependencies in `requirements.txt` ensuring zero environment mismatch.
 
 ---
 
 ## 4. Requirements Traceability Matrix (RTM)
 
-The Requirements Traceability Matrix guarantees complete end-to-end alignment from high-level project objectives to granular code implementations and verification test cases:
-
-| Objective ID | Stakeholder ID | User Story ID | Use Case ID | Functional Req ID | Non-Functional Req | Verification Method |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **O-01** (Data Lakehouse) | SH-04 (Cloud Eng) | US-12, US-13 | UC-09, UC-11 | FR-ENG-01, FR-ENG-02, FR-ENG-03, FR-ENG-04 | NFR-01, NFR-04, NFR-06 | PyTest Data Validation & Schema Quarantine Suite |
-| **O-01** (Feature Pipeline) | SH-03, SH-04 | US-08, US-13 | UC-09 | FR-ENG-05 | NFR-04, NFR-05 | Feature Variance & Lag Computation Assertions |
-| **O-02** (Surrogate Modeling) | SH-01, SH-02 | US-01, US-03 | UC-01 | FR-ML-01, FR-ML-03, FR-ML-04 | NFR-02, NFR-03, NFR-05 | ML Benchmark ($R^2 \ge 0.95$, Latency $< 250\text{ ms}$) |
-| **O-03** (Weather Forecasting) | SH-02, SH-03 | US-07, US-09 | UC-07, UC-08 | FR-ML-02, FR-ML-05 | NFR-03, NFR-05 | ASHRAE Guideline 14 ($\text{CV(RMSE)} \le 15\%$) Backtest |
-| **O-04** (Pareto Optimization) | SH-01, SH-02 | US-04, US-05, US-06 | UC-03, UC-05 | FR-OPT-01, FR-OPT-02, FR-OPT-04 | NFR-02, NFR-06 | NSGA-II Hypervolume & Boundary Constraint Tests |
-| **O-05** (What-If & XAI) | SH-01, SH-02 | US-02, US-10, US-11 | UC-02, UC-04 | FR-OPT-03, FR-XAI-01, FR-XAI-02, FR-XAI-03 | NFR-02, NFR-08 | Exact SHAP Additivity Test & UI Delta Checks |
-| **O-06** (API & Web App) | All Stakeholders | US-12, US-14 | UC-06, UC-12 | FR-SYS-01, FR-SYS-02, FR-SYS-03, FR-SYS-04, FR-SYS-05 | NFR-01, NFR-07, NFR-09, NFR-10 | OpenAPI Contract Tests & Docker Smoke Test |
-
----
-
-## 5. Verification & Acceptance Criteria Sign-Off
-
-The software system specified in this SRS shall be formally validated during Stage 6 (Testing & QA) against the following hard gates:
-1. **Automated Pipeline Gate:** 100% of integration test suites pass on GitHub Actions CI.
-2. **Physics Grounding Gate:** Surrogate models validated within a $\le 6\%$ variance window of DOE Reference Building simulations.
-3. **Execution Mode Parity Gate:** Full end-to-end user journey succeeds in local offline mode without network connectivity.
-4. **Deliverable Gate:** Full documentation package and presentation slide deck approved by DEPI instructors.
+| Requirement ID | Description | Source Objective | Implementation File | Verification Method |
+| :--- | :--- | :---: | :--- | :--- |
+| **REQ-DATA-1** | Ingest & validate 768-sample dataset | O-01 | `notebooks/Energy_project.ipynb` | Automated null & duplicate check |
+| **REQ-DATA-2** | Compute engineered interaction terms | O-02 | `src/preprocessing.py` | Unit test / transformation shape check |
+| **REQ-DATA-3** | 80/20 train/test split (`random_state=42`) | O-02 | `notebooks/Energy_project.ipynb` | Row count verification (614 / 154) |
+| **REQ-DATA-4** | Reusable Sklearn Pipeline | O-02 | `src/preprocessing.py` | Pipeline `.fit_transform()` test |
+| **REQ-MOD-1** | Baseline model 5-fold CV | O-03 | `notebooks/Energy_project.ipynb` | `eda_outputs/basic_models_results.csv` |
+| **REQ-MOD-2** | Tuned XGBoost optimization | O-04 | `notebooks/Energy_project.ipynb` | `eda_outputs/tuned_xgb_results.csv` |
+| **REQ-MOD-4** | Model serialization | O-04 | `models/xgb_*.joblib` | `joblib.load()` integrity test |
+| **REQ-UI-1** | Shape auto-fill & parameter input | O-05 | `app.py` | Functional UI testing |
+| **REQ-UI-2** | Thermal KPIs & A–E Rating | O-05 | `app.py` | Output calculation verification |
+| **REQ-UI-4** | Combinatorial Design Optimizer | O-05 | `app.py` | 768-row search result test |

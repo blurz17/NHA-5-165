@@ -1,162 +1,187 @@
-# AI-Based Building Energy Performance Evaluation & Design Optimization
+# 🏢 Building Energy Efficiency: Heating & Cooling Load Prediction
 
-[![Python Version](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.110%2B-009688.svg)](https://fastapi.tiangolo.com/)
-[![Streamlit](https://img.shields.io/badge/Streamlit-1.32%2B-FF4B4B.svg)](https://streamlit.io/)
-[![DuckDB](https://img.shields.io/badge/DuckDB-Parquet%20Lakehouse-FFF000.svg)](https://duckdb.org/)
-[![MLflow](https://img.shields.io/badge/MLflow-Tracking%20%26%20Registry-0194E2.svg)](https://mlflow.org/)
-[![DEPI Diploma](https://img.shields.io/badge/DEPI-Graduation%20Project%202026-green.svg)](https://depi.gov.eg/)
+> Machine Learning project built during the **DEPI – AWS Machine Learning track**.
+> Predict a building's heating and cooling energy load from its architectural design, *before* it is built.
 
-An end-to-end, decision-support platform that integrates architectural building design, operational smart meter telemetry, and micro-climate weather data to evaluate building performance, explain physical energy drivers, explore design scenarios, and optimize building envelope configurations.
+<!-- Add a screenshot of the app here: ![App demo](assets/demo.png) -->
+
+🔗 **Live demo:** _add your Hugging Face Space / Gradio link here_
 
 ---
 
-## 👥 Team Members (CloudXAi — NHA-5-165)
-* **Ahmed AbdElrahman Ahmed** (Team Leader)
-* **Ahmed Mohamed Sayed Shehata**
-* **Eman Abo Al Qassem Abo Al Hjajj Omar**
-* **Manar Mahmoud Ahmed**
-* **Ali Ahmed Ali Elmeleegy**
+## 📌 Problem Statement
 
-**Track:** Data Engineering + Machine Learning + AWS Cloud (AI Track)
+Architects often discover that a building consumes too much energy for heating and cooling only **after** it has been designed and built. This project trains a machine learning model on 768 simulated building designs to learn the relationship between **building shape / glazing** and **energy load**.
 
----
+An engineer can then try different designs on the model, acting as a simulator, and instantly see whether a design is energy-efficient, before anything is built.
 
-## 🚀 Key Features
+**Problem type:** Supervised **Regression** (multi-output): the targets are continuous values (kWh/m²), not classes.
 
-* **Dual-Mode Architecture (Zero Vendor Lock-in):** Operates 100% locally on developer workstations (DuckDB + Local Parquet Lakehouse + MLflow + FastAPI + Streamlit) without cloud bills, and deploys natively to AWS Cloud (S3 + Glue + Athena + SageMaker/ECS).
-* **Early-Stage Thermal Load Surrogate Modeling:** Multi-target regression (LightGBM, XGBoost, Random Forest, MLP) predicting Heating Load and Cooling Load in $< 250\text{ ms}$ with $R^2 \ge 0.95$, eliminating the computational delay of physics-based engines.
-* **Weather-Aware Operational Energy Forecasting:** Multi-horizon time-series forecasting on the ASHRAE Great Energy Predictor III benchmark conforming to ASHRAE Guideline 14 standards ($\text{CV(RMSE)} \le 15.0\%$, $\text{NMBE} \le \pm 5.0\%$).
-* **Multi-Objective Pareto Optimization (NSGA-II):** Automated evolutionary search generating 50-point non-dominated Pareto frontiers balancing energy minimization, thermal comfort, and envelope construction budget.
-* **Explainable AI (XAI Diagnostics):** Real-time SHAP (Shapley Additive exPlanations) TreeExplainer waterfall and force attribution charts isolating the physical drivers of energy behavior (e.g., orientation vs. glazing ratio).
-* **Interactive Digital Twin Dashboard:** Streamlit web application with real-time What-If sliders, 3D building massing previews, and 3D Plotly Pareto surface explorers.
-* **Automated Executive PDF Reporting:** Instant generation of formal diagnostic audit reports summarizing evaluated designs and optimization trade-offs.
+| Target | Description |
+|---|---|
+| `Heating_Load` (Y1) | Heating load of the building (kWh/m²) |
+| `Cooling_Load` (Y2) | Cooling load of the building (kWh/m²) |
 
 ---
 
-## ⚙️ High-Level System Architecture
+## 📊 Dataset
 
-```mermaid
-graph TD
-    subgraph DataSources["Data Ingestion"]
-        DS1[Architectural 768 Dataset]
-        DS2[ASHRAE GEPIII Hourly Meters]
-        DS3[Coincident Weather Data]
-        DS4[DOE Reference Buildings]
-    end
+768 building designs (12 building shapes × orientations × glazing options), based on the public **Energy Efficiency dataset** (Tsanas & Xifara, UCI Machine Learning Repository).
 
-    subgraph DualModeStorage["Dual-Mode Data Lakehouse"]
-        subgraph Local["Local Mode (DuckDB)"]
-            L1[data/raw/]
-            L2[data/processed/]
-            L3[data/curated/ Parquet]
-        end
-        subgraph AWS["AWS Cloud Mode"]
-            A1[s3://.../raw/]
-            A2[AWS Glue ETL]
-            A3[s3://.../curated/ Parquet]
-            A4[AWS Glue Catalog]
-            A5[Amazon Athena]
-        end
-    end
+| Feature | Description |
+|---|---|
+| `Relative_Compactness` | How compact the shape is |
+| `Surface_Area` | Total surface area (m²) |
+| `Wall_Area` | Wall area (m²) |
+| `Roof_Area` | Roof area (m²) |
+| `Overall_Height` | Building height (3.5 m or 7 m) |
+| `Orientation` | Orientation (2–5) |
+| `Glazing_Area` | Glazing ratio (0, 0.10, 0.25, 0.40) |
+| `Glazing_Area_Distribution` | Distribution of glazing (0–5) |
 
-    subgraph MLEngines["ML, XAI & Optimization Engine"]
-        M1[Thermal Surrogate LightGBM / XGBoost]
-        M2[Time-Series Forecaster Lag + Weather]
-        M3[Multi-Objective Optimizer NSGA-II]
-        M4[XAI Diagnostic SHAP TreeExplainer]
-        M5[MLflow Experiment Tracking]
-    end
+**Data quality:** no missing values, no duplicate rows, no outliers (IQR rule).
 
-    subgraph AppTier["Presentation & Decision Support"]
-        API[FastAPI REST Service]
-        UI[Streamlit Interactive Digital Twin]
-        PDF[Automated PDF Audit Report Generator]
-    end
+---
 
-    DataSources --> DualModeStorage
-    Local & AWS --> MLEngines
-    MLEngines --> AppTier
+## 🔍 Key EDA Findings
+
+- `Surface_Area`, `Roof_Area`, `Relative_Compactness` and `Overall_Height` are **strongly correlated** with each other (multicollinearity). This matters for Linear Regression; tree-based models handle it well.
+- `Overall_Height` and `Roof_Area` have the strongest relationship with both loads.
+- `Orientation` and `Glazing_Area_Distribution` are categorical-like with very weak correlation to the targets.
+- Heating and Cooling loads are highly correlated with each other.
+
+---
+
+## 🧱 Project Pipeline
+
+```
+Raw data ──► EDA ──► Preprocessing & Feature Engineering ──► Baseline models
+                                                              │
+                                   Advanced models + tuning ◄─┘
+                                                              │
+                                              Simulator app (Gradio)
+```
+
+1. **Data & EDA:** quality checks, distributions, correlations, feature-vs-target analysis.
+2. **Preprocessing:** 80/20 train/test split (`random_state=42`), reusable scikit-learn pipeline (`src/preprocessing.py`) with scaling, one-hot encoding and engineered features (`Wall_Surface_Ratio`, `Glazing_x_Height`). The preprocessor is fitted on the training set only to avoid data leakage.
+3. **Baseline models:** Linear Regression, Decision Tree, Random Forest, evaluated with MAE, RMSE, R² and 5-fold cross-validation.
+4. **Advanced models:** Gradient Boosting and XGBoost, with hyperparameter tuning (`RandomizedSearchCV`, 5-fold CV on the training set only) and feature importance.
+5. **Deployment:** an interactive simulator built with Gradio.
+
+---
+
+## 🏆 Results (hold-out test set)
+
+| Model | Target | MAE | RMSE | R² |
+|---|---|---|---|---|
+| Decision Tree | Heating | 0.4071 | 0.5873 | 0.9967 |
+| Decision Tree | Cooling | 1.3253 | 2.2609 | 0.9448 |
+| Random Forest | Heating | 0.3446 | 0.4919 | 0.9977 |
+| Random Forest | Cooling | 1.1659 | 1.9043 | 0.9609 |
+| Gradient Boosting | Heating | 0.3890 | 0.5212 | 0.9974 |
+| Gradient Boosting | Cooling | 1.0075 | 1.4619 | 0.9769 |
+| XGBoost (default) | Heating | 0.2731 | 0.4226 | 0.9983 |
+| XGBoost (default) | Cooling | 0.4962 | 1.0150 | 0.9889 |
+| **XGBoost (tuned)** | **Heating** | **0.2757** | **0.4177** | **0.9983** |
+| **XGBoost (tuned)** | **Cooling** | **0.4124** | **0.7319** | **0.9942** |
+
+Linear Regression reached roughly 0.93 (Heating) and 0.89 (Cooling) cross-validated R², clearly lower than the tree-based models, which indicates a **non-linear** relationship between design and energy load. _(Add the exact Linear Regression test numbers from `eda_outputs/basic_models_results.csv`.)_
+
+**Best model: tuned XGBoost.** The biggest gain from tuning was on Cooling (R² 0.961 → 0.994 compared with Random Forest).
+
+### Feature importance
+
+`Surface_Area`, `Roof_Area` and `Relative_Compactness` dominate the XGBoost importance. `Overall_Height` shows near-zero importance because it is almost fully determined by the other correlated geometry features, so importance here reflects what the model *used*, not necessarily what physically drives the load.
+
+---
+
+## 🖥️ Simulator App
+
+The Gradio app lets you:
+
+- pick a building shape, orientation and glazing options and get instant **Heating / Cooling / Total** predictions,
+- see an **A–E efficiency rating** and a comparison against the dataset average and the best possible design,
+- explore how **glazing area** changes the load,
+- use the **Design Optimizer** to find the 5 most efficient designs across all 768 combinations.
+
+Run it locally:
+
+```bash
+pip install -r requirements.txt
+python app.py
 ```
 
 ---
 
-## 📚 Complete Project Documentation Index
+## ☁️ AWS
 
-All documents are prepared according to official DEPI diploma guidelines and deliverable templates, provided in both GitHub Markdown (`.md`) and Microsoft Word (`.docx`):
+_Fill in what your team actually used, for example:_
 
-### Stage 1: Project Planning & Management
-* [Project Proposal (Markdown)](file:///e:/MY-PROJECTS/AWS.ML.Project/Documentations/01_Project_Planning/Proposal.md) | [Word DOCX](file:///e:/MY-PROJECTS/AWS.ML.Project/Documentations/01_Project_Planning/Proposal.docx)
-* [Stage 1 Project Plan & WBS (Markdown)](file:///e:/MY-PROJECTS/AWS.ML.Project/Documentations/01_Project_Planning/CloudXAi_S1_ProjectPlan_v1.md) | [Word DOCX](file:///e:/MY-PROJECTS/AWS.ML.Project/Documentations/01_Project_Planning/CloudXAi_S1_ProjectPlan_v1.docx)
-  * *Includes: Problem statement, Team roles, Objectives & numerical KPIs, Scope boundaries, Work Breakdown Structure (WBS), Gantt chart timeline (2 Oct – 4 Dec 2026), Risk register (R-01 to R-06), and Definition of Done (DoD).*
+- **Amazon S3**: stores the raw data and the processed train/test sets (`s3://<bucket>/energy-project/`).
+- **Amazon SageMaker Notebook Instance**: used to run the modeling notebooks.
+- _(Optional)_ **SageMaker Training / Tuning Job** and **Endpoint** for the best model.
 
-### Stage 2: Literature Review
-* [Stage 2 Literature Review (Markdown)](file:///e:/MY-PROJECTS/AWS.ML.Project/Documentations/02_Literature_Review/CloudXAi_S2_LiteratureReview_v1.md) | [Word DOCX](file:///e:/MY-PROJECTS/AWS.ML.Project/Documentations/02_Literature_Review/CloudXAi_S2_LiteratureReview_v1.docx)
-  * *Includes: Research Questions (RQ1–RQ5), PRISMA search methodology, review of 10+ seminal works (Tsanas & Xifara, ASHRAE GEPIII, Deb et al. NSGA-II, Lundberg & Lee SHAP), commercial software evaluation (EnergyPlus, OpenStudio, cove.tool), dataset synthesis, and identified research gaps.*
-
-### Stage 3: Requirements Gathering
-* [Stakeholder Analysis](file:///e:/MY-PROJECTS/AWS.ML.Project/Documentations/03_Requirements_Gathering/Stakeholder_Analysis.md)
-  * *5 Key Stakeholders (Architect, MEP Consultant, Facility Manager, Cloud Engineer, DEPI Evaluator) with Power/Interest matrix.*
-* [User Stories & Use Cases](file:///e:/MY-PROJECTS/AWS.ML.Project/Documentations/03_Requirements_Gathering/User_Stories_and_Use_Cases.md)
-  * *14 User Stories with Given-When-Then Acceptance Criteria and 12 detailed formal Use Cases with actor inheritance.*
-* [Functional Requirements Specification](file:///e:/MY-PROJECTS/AWS.ML.Project/Documentations/03_Requirements_Gathering/Functional_Requirements.md)
-  * *Cataloged by module: Data Engineering (FR-ENG), ML Modeling (FR-ML), Optimization (FR-OPT), XAI (FR-XAI), and Application (FR-SYS).*
-* [Non-Functional Requirements Specification](file:///e:/MY-PROJECTS/AWS.ML.Project/Documentations/03_Requirements_Gathering/Non_Functional_Requirements.md)
-  * *NFR-01 to NFR-10 covering Dual-mode portability, latency thresholds, ASHRAE Guideline 14 accuracy, and scalability.*
-* [Consolidated Software Requirements Specification (SRS)](file:///e:/MY-PROJECTS/AWS.ML.Project/Documentations/03_Requirements_Gathering/Software_Requirements_Specification_SRS.md) | [Word DOCX](file:///e:/MY-PROJECTS/AWS.ML.Project/Documentations/03_Requirements_Gathering/CloudXAi_S3_SRS_v1.docx)
-  * *Master IEEE Std 830-1998 compliant SRS with full end-to-end Requirements Traceability Matrix (RTM).*
-
-### Stage 4: System Analysis & Design (SAD)
-* [System Architecture & Deployment](file:///e:/MY-PROJECTS/AWS.ML.Project/Documentations/04_System_Analysis_and_Design/System_Architecture_and_Deployment.md)
-  * *4-Tier component architecture, Local Docker Compose setup vs. AWS Cloud production deployment.*
-* [Database Design & Data Modeling](file:///e:/MY-PROJECTS/AWS.ML.Project/Documentations/04_System_Analysis_and_Design/Database_Design_and_Data_Modeling.md)
-  * *Kimball Dimensional Star Schema, full Entity-Relationship Diagram (ERD), table data dictionaries, and Parquet partitioning strategy.*
-* [Data Flow & System Behavior](file:///e:/MY-PROJECTS/AWS.ML.Project/Documentations/04_System_Analysis_and_Design/Data_Flow_and_System_Behavior.md)
-  * *Level 0 Context and Level 1 DFDs, Sequence Diagrams (SD-01, SD-02, SD-03), Activity Diagrams (AD-01, AD-02), State Machine, and Class Diagram.*
-* [UI/UX Design & Prototyping](file:///e:/MY-PROJECTS/AWS.ML.Project/Documentations/04_System_Analysis_and_Design/UI_UX_Design_and_Prototyping.md)
-  * *ASCII and layout wireframes for all 5 screens, design tokens, color palette, and WCAG 2.1 AA accessibility guidelines.*
-* [API Specification & Testing Plan](file:///e:/MY-PROJECTS/AWS.ML.Project/Documentations/04_System_Analysis_and_Design/API_Specification_and_Testing_Plan.md)
-  * *FastAPI OpenAPI endpoints specification, JSON schemas, and 4-tier testing pyramid (Unit, Integration, ASHRAE Benchmarks, Load).*
-* [Consolidated Master SAD Document (Markdown)](file:///e:/MY-PROJECTS/AWS.ML.Project/Documentations/04_System_Analysis_and_Design/System_Analysis_and_Design_SAD.md) | [Word DOCX](file:///e:/MY-PROJECTS/AWS.ML.Project/Documentations/04_System_Analysis_and_Design/CloudXAi_S4_SystemAnalysisAndDesign_v1.docx)
+<!-- Add screenshots under assets/ and link them here -->
 
 ---
 
-## 🛠️ Technology Stack
+## 📁 Repository Structure
 
 ```
-Data Ingestion & Storage:   Local Filesystem / AWS S3, Parquet Columnar Format
-ETL & Query Engine:         DuckDB, Polars, PySpark / AWS Glue, Amazon Athena
-Machine Learning / XAI:     Scikit-learn, XGBoost, LightGBM, PyTorch, SHAP, PyMoo
-Experiment Tracking:        MLflow (Local tracking server & Model Registry)
-Backend API:                FastAPI, Pydantic v2, Uvicorn
-Frontend Dashboard:         Streamlit, Plotly Interactive Visualizations
-Reporting Engine:           ReportLab (Automated PDF Executive Export)
-DevOps & Infrastructure:    Docker, Docker-Compose, GitHub Actions, LocalStack / AWS
+.
+├── notebooks/            # EDA, preprocessing, modeling notebooks
+├── src/
+│   ├── __init__.py
+│   └── preprocessing.py  # reusable preprocessing pipeline
+├── processed/            # train.csv, test.csv, fitted preprocessors (.joblib)
+├── models/               # trained models (.joblib)
+├── eda_outputs/          # figures and result tables
+├── app.py                # Gradio simulator
+├── requirements.txt
+└── README.md
 ```
 
 ---
 
-## 📥 Quickstart: Running Locally
+## 🚀 How to Reproduce
 
-1. **Clone the repository:**
-   ```bash
-   git clone https://github.com/nhahub/NHA-5-165.git
-   cd NHA-5-165
-   ```
+```bash
+git clone <repo-url>
+cd <repo-name>
+pip install -r requirements.txt
+```
 
-2. **Configure Execution Environment:**
-   Create a `.env` file in the root directory:
-   ```bash
-   EXECUTION_MODE=local
-   DATA_DIR=./data
-   MODEL_DIR=./models
-   MLFLOW_TRACKING_URI=./mlruns
-   ```
+Then run the notebooks in `notebooks/` in order (EDA → preprocessing → modeling → tuning). To reuse the preprocessing pipeline:
 
-3. **Run with Docker Compose:**
-   ```bash
-   docker-compose up --build -d
-   ```
-   * **Streamlit Web UI:** `http://localhost:8501`
-   * **FastAPI Docs (Swagger):** `http://localhost:8000/docs`
-   * **MLflow UI:** `http://localhost:5000`
+```python
+from src.preprocessing import build_preprocessor, FEATURES, TARGETS
+
+prep_tree = build_preprocessor(scale=False, onehot=False)   # for tree-based models
+prep_linear = build_preprocessor(scale=True, onehot=True)   # for linear models / NN
+```
+
+> **Note:** the saved `.joblib` files depend on the scikit-learn / XGBoost versions listed in `requirements.txt`. Use the same versions to load them.
+
+---
+
+## 👥 Team
+
+| Member | Role |
+|---|---|
+| Ahmed AbdElrahman Ahmed (Team Leader) | Deployment, simulator & GitHub repository |
+| Manar Mahmoud Ahmed | Data & EDA |
+| Ali Ahmed Ali Elmeleegy | Preprocessing & Feature Engineering |
+| Ahmed Mohamed Sayed Shehata | Basic Modeling |
+| Eman Abo Al Qassem Abo Al Hjajj Omar | Advanced Models & Hyperparameter Tuning |
+
+---
+
+## 🛠️ Tech Stack
+
+Python · pandas · NumPy · scikit-learn · XGBoost · matplotlib · seaborn · Gradio · AWS (S3, SageMaker) · Git/GitHub
+
+---
+
+## 📚 Reference
+
+A. Tsanas, A. Xifara: *Accurate quantitative estimation of energy performance of residential buildings using statistical machine learning tools*, Energy and Buildings, 49, 560–567, 2012.

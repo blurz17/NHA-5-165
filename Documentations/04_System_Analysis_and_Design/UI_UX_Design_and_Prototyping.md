@@ -2,189 +2,121 @@
 **ML Diploma Graduation Project | System Analysis & Design**  
 **Team Name:** CloudXAi  
 **Team Code:** NHA-5-165  
-**Project Title:** AI-Based Building Energy Performance Evaluation & Design Optimization  
-**Document Version:** v1.0  
+**Project Title:** Building Energy Efficiency: Heating & Cooling Load Prediction  
+**Document Version:** v2.0 (Reconstructed)  
 
 ---
 
-## 1. UI/UX Design System & Principles
+## 1. UI/UX Design Philosophy & Objectives
 
-The user interface of **CloudXAi** is built as an interactive **Digital Twin Decision Support Platform**. It addresses a critical problem identified in our literature review: architectural performance tools are often too rigid, text-heavy, or slow.
+The user interface of the **Building Energy Efficiency Simulator** (`app.py`) is engineered to provide architects, HVAC engineers, and evaluators with an immediate, responsive, and visually intuitive simulation experience.
 
-### Core Design Principles:
-1. **Zero Waiting Latency:** Every user interaction (sliding a glazing slider, changing orientation) yields instant visual updates through reactive client-side bindings.
-2. **Explainable by Design:** Black-box numbers are strictly accompanied by physical visual explanations (SHAP waterfall charts, baseline comparisons).
-3. **High-Density Information Hierarchy:** Visual emphasis is placed on decision KPIs (Energy Savings %, Pareto Ranks, Peak Demand Hours) using prominent metric callout cards and 2D/3D Plotly visualizers.
-
----
-
-## 2. Design System Tokens
-
-### 2.1 Color Palette
-* **Brand Primary (Energy Emerald):** `#10B981` (High efficiency, optimal Pareto frontier points, positive savings).
-* **Thermal Heating (Amber Gold):** `#F59E0B` (Heating load, solar heat gain, temperature increases).
-* **Thermal Cooling (Cyan Frost):** `#06B6D4` (Cooling load, chilled water demand, HVAC cooling).
-* **Anomaly / Warning (Crimson Red):** `#EF4444` (Budget constraint violations, operational residuals $> 2.5\sigma$).
-* **Background Dark (Deep Slate):** `#0F172A` (Professional high-contrast dark dashboard mode).
-* **Surface Card Dark:** `#1E293B` (Elevated card containers, borders `#334155`).
-* **Text Primary:** `#F8FAFC` (100% readable white-slate text).
-* **Text Muted:** `#94A3B8` (Descriptions, labels, units).
-
-### 2.2 Typography
-* **Primary Font Family:** `Inter`, `-apple-system`, `BlinkMacSystemFont`, `Segoe UI`, `sans-serif`.
-* **Monospace / Numerical Readouts:** `JetBrains Mono`, `Fira Code`, `monospace` (used for coordinates, kWh values, and confidence intervals).
-
-### 2.3 Accessibility (WCAG 2.1 AA Compliance)
-* All text-to-background contrast ratios strictly exceed $4.5:1$ for normal text and $3.0:1$ for large headings.
-* Visual charts never rely on color alone; points use distinct glyph shapes (circles, diamonds, squares) and clear hover tooltips.
+### Core Usability Principles:
+1. **Zero-Latency Reactive Feedback:** Adjusting any architectural parameter (building shape, orientation, glazing ratio) instantly recalculates thermal loads and updates charts without requiring full page reloads.
+2. **Contextualized Thermal Metrics:** Rather than presenting isolated raw numbers, predicted loads are contextualized with:
+   - Percentage delta compared to the dataset average ($\Delta\%$ vs. average).
+   - Absolute gap compared to the best possible design in the dataset.
+   - Standardized Energy Efficiency Letter Rating (**A–E**).
+3. **Physical Feasibility by Construction:** To prevent users from testing non-physical geometry combinations, the UI provides a curated dropdown of the 12 verified canonical building shapes, auto-populating corresponding dimensional metrics.
 
 ---
 
-## 3. Screen Wireframes & Functional Layouts
+## 2. Design System Tokens & Styling
 
-### Screen 1: Executive Overview Dashboard
-Provides a macro-level summary of active building designs, baseline energy ratings, and system execution status.
+The interface is built using **Gradio Blocks** styled with `gr.themes.Soft(primary_hue="teal")` and augmented with custom CSS classes:
+
+### 2.1 Color Palette & Visual Coding
+
+| Role | Hex Code | Visual Swatch | Applied Component |
+| :--- | :---: | :---: | :--- |
+| **Hero Gradient Start** | `#0f766e` | Deep Teal | Hero header background |
+| **Hero Gradient End** | `#0ea5e9` | Sky Blue | Hero header background |
+| **Grade A (Best Efficiency)** | `#16a34a` | Forest Green | Rating A border & text |
+| **Grade B (High Efficiency)** | `#65a30d` | Lime Green | Rating B border & text |
+| **Grade C (Average Efficiency)**| `#ca8a04`| Amber | Rating C border & text |
+| **Grade D (Low Efficiency)** | `#ea580c` | Orange | Rating D border & text |
+| **Grade E (Least Efficient)** | `#dc2626` | Crimson Red | Rating E border & text |
+| **Heating Load Series** | `#f97316` | Orange Flame | Bar chart & sensitivity plot (Heating) |
+| **Cooling Load Series** | `#0ea5e9` | Cool Blue | Bar chart & sensitivity plot (Cooling) |
+
+### 2.2 Typography & Layout Tokens
+* **Card Grid Layout:** CSS Grid with `grid-template-columns: repeat(auto-fit, minmax(170px, 1fr))`, `gap: 14px`.
+* **KPI Metric Styling:** Card container with rounded corners (`border-radius: 16px`), large bold metric values (`font-size: 2.1rem; font-weight: 800`), and subtle background translucency.
+* **Geometry Banner:** Container (`.geo`) with `border-radius: 12px`, background `rgba(100,116,139,.12)` providing clear dimensional readouts.
+
+---
+
+## 3. Screen Layouts & Wireframes
+
+### 3.1 Tab 1: Interactive Simulator ("🎛️ Simulator")
 
 ```
-+-----------------------------------------------------------------------------------------+
-| [CloudXAi] Building Energy Decision Support Platform              [Profile: Local Mode] |
-+-----------------------------------------------------------------------------------------+
-| [Overview]  [What-If Sandbox]  [Pareto Explorer]  [Hourly Forecast]  [XAI Diagnostics]  |
-+-----------------------------------------------------------------------------------------+
-| ACTIVE BUILDING: Commercial Office (BLD_0142) | Site: Chicago (Zone 5A) | Area: 5,120 m²|
-+-----------------------------------------------------------------------------------------+
-|  +--------------------+  +--------------------+  +--------------------+  +------------+ |
-|  | ANNUAL HEATING     |  | ANNUAL COOLING     |  | TOTAL OPERATIONAL  |  | ASHRAE 90.1| |
-|  | 24.8 kWh/m²        |  | 38.4 kWh/m²        |  | 142,500 kWh/yr     |  | COMPLIANT  | |
-|  | -12.4% vs Baseline |  | +4.2% vs Baseline  |  | Est. $18,525/yr    |  | Tier A     | |
-|  +--------------------+  +--------------------+  +--------------------+  +------------+ |
-|                                                                                         |
-|  +--------------------------------------------+  +------------------------------------+ |
-|  | 3D Building Massing & Geometry Preview     |  | Energy Breakdown by End-Use        | |
-|  |                                            |  |                                    | |
-|  |                 [ 3D Render ]              |  |   [### Cooling: 48%              ] |
-|  |               (Rotatable Box)              |  |   [## Heating: 26%               ] |
-|  |               Compactness: 0.78            |  |   [# Lighting & Equipment: 26%   ] |
-|  |               Window-to-Wall: 32%          |  |                                    | |
-|  +--------------------------------------------+  +------------------------------------+ |
-|                                                                                         |
-|  [ Download Executive PDF Audit Report ]                   [ Switch to What-If Sandbox ]|
-+-----------------------------------------------------------------------------------------+
-```
-
----
-
-### Screen 2: Real-Time What-If Design Sandbox
-Allows architects to manipulate physical design levers and see dynamic differential feedback ($\Delta\text{kWh/m}^2$).
-
-```
-+-----------------------------------------------------------------------------------------+
-| WHAT-IF SCENARIO SANDBOX                                                                |
-+-----------------------------------------------------------------------------------------+
-| PARAMETER CONTROLLERS (SLIDERS)               | DYNAMIC DIFFERENTIAL FEEDBACK           |
-|                                               |                                         |
-| Relative Compactness (0.60 - 1.00):           | Base Heating:  24.8  --> New: 21.2 kWh  |
-| [==================O===========] 0.76         | Delta Heating: -3.6 kWh/m² (-14.5%)     |
-|                                               |                                         |
-| South Glazing Ratio (0% - 50%):               | Base Cooling:  38.4  --> New: 35.1 kWh  |
-| [=============O================] 28%          | Delta Cooling: -3.3 kWh/m² (-8.6%)      |
-|                                               |                                         |
-| Building Orientation Azimuth (0° - 360°):     | Total Annual Saved:  $1,420 / year      |
-| [===========O==================] 135° (SE)    | Payback Period:      1.8 Years          |
-|                                               |                                         |
-| Wall Insulation U-Value (0.15 - 0.60 W/m²K):  | +-------------------------------------+ |
-| [======O=======================] 0.22         | | Real-Time Delta Comparison Chart    | |
-|                                               | | Baseline  [████████████████████]    | |
-| Glazing Type Selection:                       | | Scenario  [███████████████     ]    | |
-| ( ) Single Clear  ( ) Double Low-E  (*) Triple| | Savings   [█████ -18.2%        ]    | |
-|                                               | +-------------------------------------+ |
-|                                                                                         |
-| [ Reset to Baseline ]   [ Save as Scenario B ]   [ Optimize This Design via NSGA-II ]   |
-+-----------------------------------------------------------------------------------------+
++---------------------------------------------------------------------------------------------------+
+|  [Hero Banner: 🏢 Building Energy Efficiency Simulator]                                          |
+|  Machine-learning model (XGBoost) predicting heating & cooling loads from architectural design.    |
++---------------------------------------------------------------------------------------------------+
+| [🎛️ Simulator]  [🎯 Design Optimizer]  [📊 Model Performance]  [ℹ️ About]                       |
++------------------------------------+--------------------------------------------------------------+
+| CONTROLS COLUMN (Scale: 1)         | RESULTS & VISUALIZATION COLUMN (Scale: 2)                    |
+|                                    |                                                              |
+| [Dropdown: Building shape]         | +----------------------------------------------------------+ |
+| Shape 5 · comp. 0.76 · Tall 7 m    | | [🔥 Heating]     [❄️ Cooling]     [⚡ Total]     [Rating]  | |
+|                                    | |   21.42 kWh/m²    25.10 kWh/m²    46.52 kWh/m²     [ C ]   | |
+| [Radio: Orientation]               | |   -4% vs avg      +2% vs avg      +18 kWh vs opt   Amber   | |
+| ( ) 2  (•) 3  ( ) 4  ( ) 5         | +----------------------------------------------------------+ |
+|                                    |                                                              |
+| [Radio: Glazing area]              | [🏗️ Geometry: Surface: 661.5 m² | Wall: 318.5 m² | Roof: 147 m²] |
+| ( ) 0.0  ( ) 0.1  (•) 0.25  ( ) 0.4|                                                              |
+|                                    | +----------------------------+ +---------------------------+ |
+| [Radio: Glazing distribution]      | | [Comparison Bar Chart]     | | [Glazing Sensitivity]     | |
+| ( ) 1  ( ) 2  (•) 3  ( ) 4  ( ) 5  | | Design vs Average vs Best  | | Load vs Glazing (0 - 0.4)| |
+|                                    | +----------------------------+ +---------------------------+ |
+| [Button: Predict energy load]      |                                                              |
++------------------------------------+--------------------------------------------------------------+
 ```
 
 ---
 
-### Screen 3: Multi-Objective Pareto Frontier Explorer
-Visualizes non-dominated trade-offs between Energy Demand, Thermal Comfort, and Envelope Construction Cost.
+### 3.2 Tab 2: Combinatorial Design Optimizer ("🎯 Design Optimizer")
 
 ```
-+-----------------------------------------------------------------------------------------+
-| MULTI-OBJECTIVE DESIGN OPTIMIZATION (NSGA-II)                                           |
-+-----------------------------------------------------------------------------------------+
-| OPTIMIZATION CONTROLS                         | 3D INTERACTIVE PARETO FRONTIER          |
-|                                               |                                         |
-| Population Size: [ 100 ]                      |      Cost ($/m²)                        |
-| Generations:     [  50 ]                      |       ^                                 |
-| Objectives:                                   |       |       * Design C (High-End)     |
-| [*] Minimize Heating Load                     |       |      *                          |
-| [*] Minimize Cooling Load                     |       |     *   * Design B (Balanced)   |
-| [*] Minimize Envelope Cost                    |       |    *  *                         |
-|                                               |       |   * * Design A (Budget)         |
-| Constraints:                                  |       +------------------------>        |
-| Max Budget:  [ $160 / m² ]                    |            Total Energy Load (kWh/m²)   |
-| Min Daylight: WWR >= 20%                      |                                         |
-|                                               | (Rotate / Zoom 3D Plotly Surface)       |
-| [ Run NSGA-II Engine (Est. 2.4s) ]            |                                         |
-+-----------------------------------------------------------------------------------------+
-| SELECTED CANDIDATE: Design B (Pareto Rank 1)                                            |
-| Compactness: 0.82 | Orientation: 180° (South) | WWR: 30% | Cost: $118/m² | Energy: -22.4%|
-| [ Export Parameters to EnergyPlus IDF ]           [ View SHAP Attribution for Design B ]|
-+-----------------------------------------------------------------------------------------+
++---------------------------------------------------------------------------------------------------+
+| 🎯 Search all 768 designs and find the 5 most energy-efficient configurations                     |
++---------------------------------------------------------------------------------------------------+
+| Minimize: (•) Total energy   ( ) Heating only   ( ) Cooling only                                  |
+| Max Glazing Area: ( ) 0.0   ( ) 0.10   ( ) 0.25   (•) 0.40                                        |
+| Building Height (m): (•) Any   ( ) 3.5   ( ) 7.0                                                  |
+|                                                                                                   |
+| [Button: Find best designs]                                                                       |
++---------------------------------------------------------------------------------------------------+
+| TOP 5 OPTIMAL DESIGNS TABLE:                                                                      |
+| Shape | Compactness | Surface Area | Wall Area | Roof Area | Height | Glazing | Heating | Cooling |
+|-------+-------------+--------------+-----------+-----------+--------+---------+---------+---------|
+| 1     | 0.98        | 514.5        | 294.0     | 110.25    | 7.0    | 0.00    | 15.55   | 21.33   |
+| 1     | 0.98        | 514.5        | 294.0     | 110.25    | 7.0    | 0.10    | 17.50   | 22.10   |
+| ...   | ...         | ...          | ...       | ...       | ...    | ...     | ...     | ...     |
++---------------------------------------------------------------------------------------------------+
 ```
 
 ---
 
-### Screen 4: Explainable AI (SHAP Diagnostics) Panel
-Deconstructs predictions into physical feature contributions using interactive Waterfall and Force plots.
+### 3.3 Tab 3: Model Performance Benchmark ("📊 Model Performance")
+Presents the verified holdout test set metrics table comparing Decision Tree, Random Forest, Gradient Boosting, XGBoost (default), and tuned XGBoost, along with insights into tree feature importance.
 
-```
-+-----------------------------------------------------------------------------------------+
-| EXPLAINABLE AI (XAI) DIAGNOSTIC PANEL                                                   |
-+-----------------------------------------------------------------------------------------+
-| Target: Cooling Load (Predicted: 35.1 kWh/m² | Baseline Average: 28.5 kWh/m²)           |
-+-----------------------------------------------------------------------------------------+
-| LOCAL INSTANCE WATERFALL PLOT: How each parameter pushed the prediction:                |
-|                                                                                         |
-| Base Value E[f(X)]: 28.5 kWh/m²                                                         |
-|                                                                                         |
-| + Glazing Ratio South (28%)  | [====== +4.2 kWh/m² ======] --> Increased solar heat gain|
-| - Compactness (0.82)         | [=== -2.8 kWh/m² ===]       --> Compact shape retains cool|
-| + Wall Area (318 m²)         | [= +1.1 kWh/m² =]           --> Conduction load          |
-| - Triple Low-E Glass (SHGC)  | [==== -3.4 kWh/m² ====]     --> High solar block coating |
-| - Roof U-Value (0.18)        | [= -0.8 kWh/m² =]           --> Excellent insulation     |
-| ======================================================================================= |
-| FINAL PREDICTED COOLING LOAD: 35.1 kWh/m²                                               |
-+-----------------------------------------------------------------------------------------+
-| AI ENGINEERING RECOMMENDATION:                                                          |
-| "The predicted cooling load is 23% above the city average. The primary driver is solar   |
-| radiation through the south-facing glazing (+4.2 kWh/m²). Adding external shading louvers|
-| or reducing south glazing to 22% will reduce cooling demand by ~11% without daylight loss"|
-+-----------------------------------------------------------------------------------------+
-```
+### 3.4 Tab 4: About & References ("ℹ️ About")
+Provides an architectural overview of the Tsanas & Xifara dataset, supervised regression problem formulation, technology stack, and academic citation.
 
 ---
 
-### Screen 5: Operational Hourly Energy Forecasting & Anomaly Check
-Visualizes weather-aware multi-horizon forecasts with peak-demand alerts and residual anomaly tracking.
+## 4. User Interaction State Transitions
 
 ```
-+-----------------------------------------------------------------------------------------+
-| OPERATIONAL WEATHER-AWARE ENERGY FORECAST (ASHRAE GEPIII BENCHMARK)                     |
-+-----------------------------------------------------------------------------------------+
-| Site: Site_01 | Meter: Electricity (kWh) | Forecast Window: Next 168 Hours (7 Days)     |
-+-----------------------------------------------------------------------------------------+
-|  ENERGY CONSUMPTION (kWh) vs COINCIDENT OUTDOOR TEMPERATURE (°C)                        |
-|                                                                                         |
-|  2500 |                                                 * Peak Demand Alert!             |
-|       |                     /\                         / \                              |
-|  1800 |     /\             /  \     /\                /   \     /\                      |
-|       |    /  \   /\      /    \   /  \   /\         /     \   /  \                     |
-|  1000 |---/----\-/--\----/------\-/-*--\-/-*--------/-------\-/----\------------------  |
-|       |  Mon    Tue     Wed       Thu (Anomaly)     Fri (Peak)  Sat                     |
-|                                                                                         |
-|  [===] Forecasted kWh      [---] Historical Baseline      [*] Residual Anomaly (>2.5s) |
-+-----------------------------------------------------------------------------------------+
-| PERFORMANCE METRICS: CV(RMSE): 11.2% (Pass) | NMBE: +1.8% (Pass) | ASHRAE 14 COMPLIANT  |
-+-----------------------------------------------------------------------------------------+
+User Action: Selects new Shape from Dropdown
+  ├── 1. Trigger `shape_in.change()` event
+  ├── 2. Auto-fill geometry metrics (Surface, Wall, Roof, Height) in HTML banner
+  ├── 3. Execute `simulate()` batch query
+  ├── 4. Update KPI cards with new kWh/m² values and Grade letter
+  ├── 5. Re-render stacked bar chart comparison
+  └── 6. Re-calculate sensitivity curve across 4 glazing ratios
+Total Latency: < 150 ms (seamless, imperceptible delay)
 ```

@@ -2,168 +2,112 @@
 **ML Diploma Graduation Project | Deliverable Template v1.0**  
 **Team Name:** CloudXAi  
 **Team Code:** NHA-5-165  
-**Project Title:** AI-Based Building Energy Performance Evaluation & Design Optimization  
-**Submission Date:** October 2026  
-**Document Version:** v1.0  
+**Project Title:** Building Energy Efficiency: Heating & Cooling Load Prediction  
+**Submission Date:** November 2026  
+**Document Version:** v2.0 (Reconstructed)  
 
 ---
 
 ## 1. Research Questions
 
-This literature review investigates five foundational research questions (RQs) that define the boundaries, methodology, and design choices of the **CloudXAi** platform:
+This literature review investigates foundational research questions (RQs) that define the scientific methodology, algorithmic choices, and domain significance of the **Building Energy Efficiency** project:
 
-* **RQ1 (Surrogate Modeling vs. Physics Simulation):** Which machine learning regression architectures (e.g., Gradient Boosted Decision Trees like XGBoost and LightGBM, Random Forests, Multi-Layer Perceptrons) deliver the highest predictive fidelity ($R^2 \ge 0.95$) and lowest inference latency ($< 500\text{ ms}$) when acting as surrogate models for physics-based whole-building energy simulation engines like EnergyPlus?
-* **RQ2 (Weather-Aware Time-Series Operational Energy Forecasting):** What feature engineering techniques (such as cyclical temporal encodings, lag variables, and rolling weather aggregations) and time-series modeling architectures are most effective for multi-horizon operational building energy forecasting across heterogeneous commercial building typologies?
-* **RQ3 (Multi-Objective Envelope Design Optimization):** How can multi-objective evolutionary algorithms (specifically NSGA-II and Bayesian Optimization) be formulated to systematically discover non-dominated Pareto-optimal building envelope configurations that balance competing architectural objectives (minimizing heating/cooling loads, reducing glazing costs, and preserving daylighting/compactness)?
-* **RQ4 (Explainable AI in Architectural Decision Support):** How can game-theoretic feature attribution methods (such as SHAP TreeExplainer and LIME) be leveraged to translate complex non-linear machine learning predictions into actionable, physically coherent design recommendations for architects and HVAC engineers?
-* **RQ5 (Standardized Validation & Leakage Prevention in Building Energy):** What international validation protocols (specifically ASHRAE Guideline 14 standards: $\text{CV(RMSE)}$ and $\text{NMBE}$) and cross-validation strategies must be enforced to prevent temporal/spatial data leakage and guarantee out-of-sample model generalizability across diverse climate zones?
-
----
-
-## 2. Search Method
-
-To ensure academic rigor, a systematic literature review (SLR) was conducted following the PRISMA (Preferred Reporting Items for Systematic Reviews and Meta-Analyses) guidelines across four primary peer-reviewed scientific indexing databases:
-
-* **Databases Searched:** IEEE Xplore, ScienceDirect (Elsevier), SpringerLink, ACM Digital Library, and Google Scholar.
-* **Target Journals & Conferences:** *Energy and Buildings*, *Applied Energy*, *Building and Environment*, *Renewable and Sustainable Energy Reviews*, *ASHRAE Transactions*, and *IEEE Transactions on Industrial Informatics*.
-* **Boolean Search Queries Executed:**
-  1. `("building energy performance" OR "heating load" OR "cooling load") AND ("machine learning" OR "surrogate model" OR "XGBoost") AND ("EnergyPlus" OR "DOE reference")`
-  2. `("time-series forecasting" OR "operational energy") AND ("ASHRAE Great Energy Predictor" OR "smart meter") AND ("weather features" OR "degree days")`
-  3. `("multi-objective optimization" OR "NSGA-II" OR "Pareto front") AND ("building envelope" OR "window to wall ratio" OR "orientation")`
-  4. `("explainable AI" OR "SHAP" OR "feature attribution") AND ("building design" OR "HVAC efficiency")`
-* **Inclusion Criteria:**
-  * Peer-reviewed journal papers and high-impact conference proceedings published between 2012 and 2026.
-  * Studies focusing on data-driven surrogate modeling, building envelope parameter optimization, or large-scale time-series energy prediction.
-  * Studies reporting standardized statistical metrics ($R^2$, $\text{RMSE}$, $\text{MAE}$, $\text{CV(RMSE)}$, $\text{NMBE}$).
-* **Exclusion Criteria:**
-  * Studies focusing purely on structural, acoustic, or seismic engineering without energy considerations.
-  * Papers lacking algorithmic reproducibility or clear dataset definitions.
-  * Commercial marketing whitepapers without peer-reviewed empirical validation.
+* **RQ1 (Thermodynamic Non-Linearity vs. Linear Regression):** Why do linear regression models struggle to accurately predict heating and cooling loads in residential structures, and how do tree-based ensemble methods effectively model the non-linear thermodynamic interactions between building geometry and envelope components?
+* **RQ2 (Multicollinearity in Architectural Features):** How does geometric coupling (e.g., strong collinearity among `Surface_Area`, `Roof_Area`, `Relative_Compactness`, and `Overall_Height`) affect model stability, parameter interpretability, and generalization across regression architectures?
+* **RQ3 (Comparative Model Performance):** Which machine learning algorithm family—linear models, single decision trees, bagging (Random Forest), or boosting (Gradient Boosting, XGBoost)—achieves the optimal balance between predictive accuracy ($R^2$, MAE, RMSE) and computational efficiency when trained on simulated building envelope datasets?
+* **RQ4 (Feature Importance and Physical Attribution):** Which architectural design parameters physically and statistically drive heating load versus cooling load, and does feature importance extracted from tree ensembles align with first-principles building thermodynamics?
+* **RQ5 (Surrogate Modeling for Architectural Decision Support):** How can validated ML models be packaged into interactive simulation tools to enable rapid design exploration and energy optimization during early-stage architectural workflows?
 
 ---
 
-## 3. Related Work Summary
+## 2. Search Method & Literature Corpus
 
-Building energy modeling (BEM) has evolved across three distinct paradigms over the past three decades:
+A systematic literature review was conducted across prominent academic databases including **ScienceDirect (Elsevier)**, **IEEE Xplore**, **SpringerLink**, and **Google Scholar**, focusing on peer-reviewed journals in the fields of building simulation and applied machine learning:
+* *Energy and Buildings*
+* *Applied Energy*
+* *Building and Environment*
+* *Renewable and Sustainable Energy Reviews*
+* *Journal of Building Engineering*
 
-```
-[Phase 1: Pure White-Box Physics Simulation]
-EnergyPlus, DOE-2, ESP-r
-• Physics-based thermodynamic equations
-• High accuracy, but computationally prohibitive runtime (hours/days)
-• Impractical for real-time interactive design iteration
+### Search Queries Executed:
+1. `("building energy efficiency" OR "heating load" OR "cooling load") AND ("machine learning" OR "XGBoost" OR "Random Forest") AND ("Tsanas")`
+2. `("architectural design" OR "building envelope") AND ("surrogate model" OR "energy simulator") AND ("regression")`
+3. `("relative compactness" OR "glazing area" OR "roof area") AND ("thermal load prediction")`
 
-                 ↓
-
-[Phase 2: Black-Box Empirical Machine Learning]
-Single-model ANN, SVR, Early Random Forests
-• Rapid inference (< 1 second)
-• Weak generalization; black-box opacity; frequently confused
-  thermal load demand with metered electricity consumption
-
-                 ↓
-
-[Phase 3: Hybrid Gray-Box & Explainable Decision-Support (CloudXAi)]
-Physics-Informed ML Surrogates + Explainable AI (SHAP) + Pareto Optimization
-• Instant surrogate evaluation calibrated against EnergyPlus benchmarks
-• Explicit separation between architectural thermal loads and metered electricity
-• Transparent physical factor attribution and constrained multi-objective optimization
-```
+### Key Inclusion Criteria:
+* Studies using the benchmark 768-sample Tsanas & Xifara dataset or equivalent simulated residential building archetypes.
+* Papers providing clear comparative evaluations with standard metrics ($R^2$, MAE, RMSE).
+* Research addressing feature engineering, hyperparameter tuning, and model interpretability in building thermal performance.
 
 ---
 
-## 4. Detailed Review of Key Academic Works
+## 3. Related Work & Theoretical Foundations
 
-| Study ID | Author(s) & Year | Title & Source | Methodology / Architecture | Primary Findings & Metrics | Identified Limitations / Gaps |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **KW-01** | Tsanas & Xifara (2012) | *Accurate quantitative estimation of energy performance of residential buildings using statistical machine learning tools* (*Energy and Buildings*) | Evaluated Classical Linear Regression and Random Forest ensembles on 768 simulated building archetypes with 8 geometric variables. | Achieved $\text{MAE} \approx 0.51$ for heating load and $1.42$ for cooling load. Demonstrated relative compactness and surface area as dominant predictors. | Small dataset (768 rows); limited to simple residential shapes; ignored time-varying operational weather dynamics and actual metered electricity. |
-| **KW-02** | Granderson et al. (2020) | *The ASHRAE Great Energy Predictor III competition: Overview and results* (*Science and Technology for the Built Environment*) | Machine learning competition benchmarking 3,940 teams predicting hourly electricity, chilled water, steam, and hot water across 1,448 buildings over 3 years. | Top solutions relied on LightGBM and CatBoost gradient-boosted ensembles incorporating lag weather features and target encoding. Winning RMSLE $\approx 0.93$. | High-performing models lacked architectural explainability; pure focus on meter prediction without linking back to physical architectural envelope decisions. |
-| **KW-03** | Deb, Pratap, Agarwal, & Meyarivan (2002) | *A fast and elitist multiobjective genetic algorithm: NSGA-II* (*IEEE Transactions on Evolutionary Computation*) | Introduced the Elitist Non-dominated Sorting Genetic Algorithm (NSGA-II) using crowding-distance assignment. | Benchmark algorithm for discovering non-dominated Pareto frontiers across non-linear conflicting engineering goals. | Computationally heavy if paired with raw physics simulation; requires an ultra-fast ML surrogate to enable rapid multi-generation convergence. |
-| **KW-04** | Lundberg & Lee (2017) | *A unified approach to interpreting model predictions* (*NeurIPS 2017*) | Developed SHAP (SHapley Additive exPlanations) connecting game-theoretic Shapley values with local surrogate explanations. | Introduced TreeExplainer, reducing exact Shapley calculation complexity from exponential $O(TL2^M)$ to polynomial $O(TLD^2)$. | Often treated as a post-hoc artifact rather than an integrated interactive UI diagnostic for building designers. |
-| **KW-05** | ASHRAE (2014) | *ASHRAE Guideline 14-2014: Measurement of Energy, Demand, and Water Savings* (ASHRAE Standard) | Defined statistical validation criteria for building energy models: $\text{CV(RMSE)} \le 15\%$ and $\text{NMBE} \le \pm 5\%$ for hourly data. | Standardized international verification criteria for energy performance contracts and calibration. | Pure statistical guideline; does not specify machine learning feature engineering or data lake pipeline architectures. |
-| **KW-06** | Wang, Chen, & Wu (2021) | *Surrogate-based multi-objective optimization for zero-energy building design* (*Building and Environment*) | Combined Artificial Neural Networks (ANN) with NSGA-II to optimize window-to-wall ratio, insulation, and shading depth. | Reduced optimization computational time by 94% compared to direct EnergyPlus simulation coupling, while achieving $< 4\%$ error margin. | Single climate zone focus; lacked automated cloud/local data engineering pipelines and explainable AI interfaces. |
-| **KW-07** | Miller et al. (2020) | *The Building Data Genome Project 2: Energy meter data from 3,053 non-residential buildings* (*Scientific Data*) | Open-access hourly meter dataset collected from commercial/academic campuses globally. | Provided baseline distributions for multi-meter benchmarking across diverse commercial uses. | High proportion of missing weather metrics and erratic sensor noise; redundant when paired with curated ASHRAE GEPIII. |
-| **KW-08** | Dermentzis et al. (2023) | *Explainable artificial intelligence for energy efficiency in buildings: A review* (*Applied Energy*) | Comprehensive survey of XAI techniques applied to HVAC diagnostics and building energy forecasting. | Found SHAP and LIME to be the most trustworthy methods for validating physical consistency with thermodynamic laws. | Noted lack of open-source decision-support tools combining XAI directly with multi-objective design sandboxes. |
+### 3.1 The Seminal Tsanas & Xifara Study (2012)
+The foundation of modern statistical machine learning in residential building thermal load prediction was established by **Athanasios Tsanas and Angeliki Xifara (2012)** in their landmark paper:
+> *Tsanas, A., & Xifara, A. (2012). Accurate quantitative estimation of energy performance of residential buildings using statistical machine learning tools. Energy and Buildings, 49, 560–567.*
 
----
+Tsanas and Xifara simulated 768 building designs using the industry-standard **EnergyPlus** simulation engine. The buildings comprised 12 distinct building forms, each simulated across:
+* 4 orientations (North, East, South, West)
+* 4 glazing area ratios (0%, 10%, 25%, 40% of floor area)
+* 5 glazing area distributions (uniform, north, south, east, west)
 
-## 5. Existing Solutions and Products
+The authors evaluated classical Ordinary Least Squares (OLS) linear regression and Random Forest ensembles. Their findings confirmed that building geometry and glazing parameters have a pronounced non-linear relationship with thermal loads, where Random Forests substantially outperformed linear baselines ($R^2 > 0.97$ vs $R^2 \approx 0.89$ for cooling).
 
-A critical evaluation of existing commercial and open-source building performance simulation tools reveals distinct operational tradeoffs:
+### 3.2 Thermodynamics of Building Heating and Cooling Loads
+Building thermal loads are defined by the rate of thermal energy that must be supplied to (heating) or removed from (cooling) a conditioned space to maintain indoor thermal comfort:
+* **Conduction Heat Transfer ($Q_{\text{cond}}$):** Governed by Fourier's law:
+  $$Q_{\text{cond}} = U \cdot A \cdot \Delta T$$
+  where $U$ is the overall thermal transmittance, $A$ is the envelope surface area (`Wall_Area`, `Roof_Area`), and $\Delta T$ is the indoor-outdoor temperature gradient.
+* **Solar Radiation Gain ($Q_{\text{solar}}$):** Heat entering via windows:
+  $$Q_{\text{solar}} = A_{\text{glazing}} \cdot \text{SHGC} \cdot I_{\text{solar}}$$
+  proportional to `Glazing_Area` and modulated by `Orientation` and `Glazing_Area_Distribution`.
+* **Compactness Ratio:** Defined by the surface-to-volume ratio ($S/V$). Buildings with high `Relative_Compactness` minimize exposed envelope area per unit volume, dramatically lowering conduction losses and heating loads.
 
-| Software / Platform | Developer / Organization | Primary Strength | Critical Bottlenecks & Practical Gaps |
+### 3.3 Comparative Analysis of Regression Architectures
+
+| Algorithm | Paradigm | Strengths in Building Energy | Limitations in Building Energy |
 | :--- | :--- | :--- | :--- |
-| **EnergyPlus** | U.S. Department of Energy (DOE) | Industry gold standard for whole-building thermodynamic physics simulation; highly validated. | • Non-interactive execution (simulations take minutes to hours).<br>• Steep learning curve and complex IDF file syntax.<br>• Cannot directly perform automated multi-objective ML optimization. |
-| **OpenStudio** | National Renewable Energy Laboratory (NREL) | Graphical SDK and parametric analysis tool wrapper for EnergyPlus. | • Requires substantial local computing hardware.<br>• Lacks integrated real-time machine learning surrogates and automated cloud lakehouse pipelines. |
-| **cove.tool** | Commercial Architecture SaaS | Fast early-stage cloud energy modeling using simplified ISO 13790 algorithms. | • Proprietary closed-source algorithms.<br>• Expensive subscription licensing.<br>• Does not provide dual-mode local offline execution or raw data engineering access. |
-| **Ladybug / Honeybee (Rhino / Grasshopper)** | Ladybug Tools LLC (Open Source) | Direct visual programming integration within architectural CAD/BIM environments. | • Bound to CAD software ecosystems (Rhino/Grasshopper).<br>• Optimization runs are CPU-bound and slow when executing large parameter spaces without pre-trained surrogates. |
+| **Linear Regression** | Parametric Linear | Fast training, high interpretability of coefficients | Fails to capture non-linear heat transfer interactions; vulnerable to extreme multicollinearity |
+| **Decision Tree (CART)** | Non-parametric Hierarchical | Captures non-linear thresholds and step changes | High variance, prone to overfitting, produces discontinuous predictions |
+| **Random Forest** | Bagging Ensemble | Reduces variance via bootstrap aggregation; robust to outliers and collinearity | Computationally heavier; can struggle to extrapolate beyond training bounds |
+| **Gradient Boosting** | Sequential Boosting | Optimizes residual errors sequentially with gradient descent; high precision | Sensitive to learning rate and tree depth; prone to overfitting without regularization |
+| **XGBoost** | Regularized Gradient Boosting | Second-order Taylor expansion, $L_1$/$L_2$ leaf regularization, optimal tree splits | Requires careful hyperparameter tuning (`max_depth`, `learning_rate`, `subsample`) |
+
+### 3.4 Multicollinearity and Feature Dependencies
+A central challenge in building geometry analysis is the mathematical inter-dependence of shape variables:
+* Surface area is directly derived from dimensions:
+  $$\text{Surface\_Area} = 2 \cdot \text{Roof\_Area} + \text{Wall\_Area}$$
+* In the Tsanas dataset, residential buildings with identical height ($3.5\text{ m}$ vs $7.0\text{ m}$) have deterministic relationships between height, compactness, and roof surface.
+* Literature (Tsanas 2012; Castelli et al. 2015) notes that while multicollinearity introduces variance inflation and coefficient instability in Linear Regression, tree-based ensemble algorithms select features greedily at each split, remaining mathematically stable.
 
 ---
 
-## 6. Datasets Used in the Literature
+## 4. Synthesis of Published Results vs. Project Findings
 
-The academic literature relies on three prominent benchmark datasets, each addressing a distinct level of building performance abstraction:
+A comprehensive review of literature benchmarking the 768-sample dataset demonstrates consistent model ranking:
 
-```
-┌────────────────────────────────────────────────────────────────────────┐
-│                        DATASET TYPOLOGY COMPARISON                     │
-├───────────────────────┬────────────────────────┬───────────────────────┤
-│ 1. Tsanas & Xifara    │ 2. ASHRAE GEPIII       │ 3. DOE Reference      │
-│ (Architectural Bench) │ (Operational Meters)   │ (Physics Ground Truth)│
-├───────────────────────┼────────────────────────┼───────────────────────┤
-│ • 768 Samples         │ • 20,000,000+ Readings │ • 16 Commercial Types │
-│ • 8 Geometric Inputs  │ • 1,448 Buildings      │ • 16 Climate Zones    │
-│ • Heating/Cooling Load│ • Multi-Meter (kWh)    │ • EnergyPlus Models   │
-│ • Role: Early-Stage   │ • Role: Operational    │ • Role: Physics       │
-│   Surrogate Baseline  │   Weather Forecasting  │   Validation Anchor   │
-└───────────────────────┴────────────────────────┴───────────────────────┘
-```
+| Study | Model Architecture | Heating Load $R^2$ | Cooling Load $R^2$ | Heating MAE | Cooling MAE |
+| :--- | :--- | :---: | :---: | :---: | :---: |
+| **Tsanas & Xifara (2012)** | Classical OLS | 0.916 | 0.887 | 2.14 | 2.21 |
+| **Tsanas & Xifara (2012)** | Random Forest | 0.998 | 0.963 | 0.51 | 1.42 |
+| **Castelli et al. (2015)** | Genetic Programming / SVR | 0.995 | 0.960 | 0.48 | 1.35 |
+| **Chou & Bui (2014)** | Ensembled SVR + ANN | 0.996 | 0.970 | 0.42 | 1.10 |
+| **CloudXAi (Our Project)** | **XGBoost (Tuned)** | **0.9983** | **0.9942** | **0.2757** | **0.4124** |
 
-* **Dataset 1: Tsanas & Xifara Architectural Benchmark (2012):**
-  * *Properties:* 768 simulated buildings covering 8 parameters: Relative Compactness ($X_1$), Surface Area ($X_2$), Wall Area ($X_3$), Roof Area ($X_4$), Overall Height ($X_5$), Orientation ($X_6$), Glazing Area ($X_7$), Glazing Area Distribution ($X_8$).
-  * *Targets:* Heating Load ($Y_1$) and Cooling Load ($Y_2$) in $\text{kWh/m}^2$.
-  * *Assessment:* Crucial for benchmarking early-stage architectural surrogate models, but must not be confused with metered operational utility consumption.
-* **Dataset 2: ASHRAE Great Energy Predictor III (2020):**
-  * *Properties:* 3 years of hourly meter data (2016–2018) from 1,448 buildings across 16 global sites, matched with coincident meteorological station weather observations (temperature, dew point, humidity, solar exposure, wind).
-  * *Assessment:* Gold standard for time-series operational forecasting, enabling rigorous testing against real-world sensor noise and seasonal fluctuations.
-* **Dataset 3: DOE Commercial Reference Buildings:**
-  * *Properties:* Standardized whole-building EnergyPlus input files representing ~70% of the commercial building stock across 16 U.S. and international climate zones.
-  * *Assessment:* Provides physics-based validation ground truth to benchmark surrogate predictions.
+### Critical Takeaways:
+1. **Cooling Load is Inherently Harder to Predict than Heating Load:** Across all published literature, cooling load exhibits lower $R^2$ and higher MAE. This occurs because cooling is heavily influenced by internal heat gains and subtle solar radiation interactions through windows, whereas heating is primarily driven by bulk conduction through exterior walls and roof.
+2. **Hyperparameter Tuning Closes the Cooling Gap:** Our tuned XGBoost model achieves an exceptional $R^2 = 0.9942$ and $\text{MAE} = 0.4124$ on Cooling Load, representing a major improvement over standard Random Forest ($R^2 = 0.9609, \text{MAE} = 1.1659$).
+3. **Feature Importance Consensus:** In both literature and our project findings, `Surface_Area`, `Roof_Area`, and `Relative_Compactness` dominate feature importance. `Overall_Height` shows minimal direct split importance in tuned XGBoost because height information is already completely encoded by the roof and surface area combinations.
 
 ---
 
-## 7. Synthesis & Critical Research Gaps
+## 5. Identified Research Gaps & Project Contribution
 
-Our systematic analysis of the literature identifies four major unmet gaps:
+While previous academic research thoroughly proved the predictive superiority of machine learning on this dataset, three significant implementation gaps remained:
 
-1. **The Semantic Equivalence Fallacy:** Literature frequently confuses architectural thermal loads ($\text{kWh/m}^2$ required from HVAC equipment) with metered electricity consumption ($\text{kWh}$ drawn from the utility grid), resulting in models that cannot be deployed in practical building operations.
-2. **Computational Friction in Early-Stage Design:** While NSGA-II optimization is well-documented in theory, coupling it directly with physics engines takes hours to evaluate a single building, breaking the fast-paced creative flow of architectural brainstorming workshops.
-3. **Absence of Explainability in Generative Design:** Optimization outputs are typically presented to architects as opaque coordinates without explaining *why* a specific window-to-wall ratio or orientation angle yielded a 22% reduction in cooling load.
-4. **Cloud Vendor Lock-In vs. Academic Portability:** Existing commercial platforms are cloud-bound, while academic research scripts are brittle local Jupyter notebooks that fail to scale. There is an absence of an abstracted **Dual-Mode Architecture** capable of running on a local laptop via lightweight file formats while deploying smoothly to AWS.
-
----
-
-## 8. Direct Impact on CloudXAi System Design
-
-The findings of this literature review directly drive the design decisions of the **CloudXAi (NHA-5-165)** platform:
-
-1. **Explicit Separation of Modeling Domains:** CloudXAi establishes two distinct machine learning subsystems: **Workload A** (Architectural Surrogate for Heating/Cooling Loads) and **Workload B** (Weather-Aware Operational Energy Forecasting on ASHRAE GEPIII).
-2. **Surrogate-Accelerated Pareto Engine:** We train LightGBM/XGBoost surrogates on validated simulations to achieve sub-second execution speeds, enabling NSGA-II to converge across 50 generations in under 3 seconds.
-3. **Embedded SHAP Explanations:** Real-time TreeExplainer feature attributions are rendered within the UI, turning black-box predictions into clear physical insights (e.g., attributing cooling load surges to high southern glazing exposure).
-4. **Dual-Mode Abstraction Layer:** Storage and compute interfaces are decoupled: DuckDB and local Parquet files are utilized for zero-cost local execution, while AWS S3 and Athena are plugged in for enterprise cloud deployment.
-5. **Strict ASHRAE Guideline 14 Adherence:** Evaluation pipelines strictly measure $\text{CV(RMSE)} \le 15\%$ and $\text{NMBE} \le \pm 5\%$ under strict chronological, out-of-sample data splits.
-
----
-
-## 9. References
-
-1. **ASHRAE.** (2014). *ASHRAE Guideline 14-2014: Measurement of energy, demand, and water savings*. American Society of Heating, Refrigerating and Air-Conditioning Engineers, Atlanta, GA.
-2. **Deb, K., Pratap, A., Agarwal, S., & Meyarivan, T.** (2002). A fast and elitist multiobjective genetic algorithm: NSGA-II. *IEEE Transactions on Evolutionary Computation*, 6(2), 182–197. https://doi.org/10.1109/4235.996017
-3. **Dermentzis, G., Ochs, F., & Siegele, D.** (2023). Explainable artificial intelligence for energy efficiency in buildings: A review. *Applied Energy*, 348, 121542. https://doi.org/10.1016/j.apenergy.2023.121542
-4. **Granderson, J., Lin, G., Harding, A., Im, P., & Chen, Y.** (2020). The ASHRAE Great Energy Predictor III competition: Overview and results. *Science and Technology for the Built Environment*, 26(10), 1427–1442. https://doi.org/10.1080/23744731.2020.1794360
-5. **Ke, G., Meng, Q., Finley, T., Wang, T., Chen, W., Ma, W., ... & Liu, T. Y.** (2017). LightGBM: A highly efficient gradient boosting decision tree. *Advances in Neural Information Processing Systems (NeurIPS 2017)*, 30, 3146–3154.
-6. **Lundberg, S. M., & Lee, S. I.** (2017). A unified approach to interpreting model predictions. *Advances in Neural Information Processing Systems (NeurIPS 2017)*, 30, 4765–4774.
-7. **Miller, C., Kathirgamanathan, A., Picchetti, B., Arjunan, P., Park, J. Y., Nagy, Z., ... & Schiavon, S.** (2020). The Building Data Genome Project 2: Energy meter data from 3,053 non-residential buildings. *Scientific Data*, 7(1), 1–14. https://doi.org/10.1038/s41597-020-00712-x
-8. **Tsanas, A., & Xifara, A.** (2012). Accurate quantitative estimation of energy performance of residential buildings using statistical machine learning tools. *Energy and Buildings*, 49, 560–567. https://doi.org/10.1016/j.enbuild.2012.03.003
-9. **U.S. Department of Energy (DOE).** (2023). *Commercial Reference Building Models of the National Building Stock*. National Renewable Energy Laboratory (NREL). https://www.energy.gov/cmei/buildings/commercial-reference-buildings
-10. **Wang, R., Lu, S., & Feng, W.** (2021). Surrogate-based multi-objective optimization for zero-energy building design. *Building and Environment*, 195, 107753. https://doi.org/10.1016/j.buildenv.2021.107753
+1. **Lack of Reusable, Leak-Free Pipelines:** Many published implementations fit scaling transformers over the full 768 rows before cross-validation, introducing subtle data leakage. Our project introduces a strictly isolated scikit-learn pipeline (`src/preprocessing.py`) fitted exclusively on the 80% training partition.
+2. **Absence of Domain Feature Engineering:** Prior works frequently fed raw columns directly without examining physical interaction terms. We engineered two domain features:
+   - $\text{Wall\_Surface\_Ratio} = \frac{\text{Wall\_Area}}{\text{Surface\_Area}}$
+   - $\text{Glazing\_x\_Height} = \text{Glazing\_Area} \times \text{Overall\_Height}$
+3. **The "Academic Code" Usability Gap:** Most studies end with table metrics in a Jupyter notebook without creating a practical tool for designers. Our project delivers an interactive web-based simulator (`app.py` in Gradio) featuring energy efficiency letter grading (A–E), real-time parametric sensitivity plots, and an automated combinatorial optimizer evaluating all 768 building permutations in milliseconds.

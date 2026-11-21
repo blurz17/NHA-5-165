@@ -2,216 +2,145 @@
 **ML Diploma Graduation Project | Deliverable Template v1.0**  
 **Team Name:** CloudXAi  
 **Team Code:** NHA-5-165  
-**Project Title:** AI-Based Building Energy Performance Evaluation & Design Optimization  
-**Submission Date:** October 2026  
-**Document Version:** v1.0  
+**Project Title:** Building Energy Efficiency: Heating & Cooling Load Prediction  
+**Submission Date:** November 2026  
+**Document Version:** v2.0 (Reconstructed)  
 
 ---
 
 ## 1. Project Summary
 
-The **AI-Based Building Energy Performance Evaluation & Design Optimization** platform is an intelligent decision-support system designed for sustainable architects, energy consultants, and building performance engineers. The system resolves the trade-off between the computational slowness of physics-based engines (such as EnergyPlus) and the black-box limitations of standard empirical regression. 
+The **Building Energy Efficiency: Heating & Cooling Load Prediction** project is an applied machine learning initiative developed under the **DEPI – AWS Machine Learning Track**. 
 
-The platform implements a **Dual-Mode Architecture** running seamlessly both on local developer workstations (via DuckDB, Parquet, MLflow, FastAPI, and Streamlit) and in enterprise cloud environments (via AWS S3, AWS Glue, Amazon Athena, and Amazon SageMaker). By combining early-stage parametric architectural data (768 benchmark archetypes) with massive operational time-series meter data (ASHRAE Great Energy Predictor III) and micro-climate weather conditions, CloudXAi enables:
-* Real-time ($< 500\text{ ms}$) multi-target thermal load forecasting (Heating and Cooling loads).
-* Weather-aware operational electricity consumption forecasting conforming to ASHRAE Guideline 14 standards.
-* Explainable AI diagnostics using SHAP (Shapley Additive exPlanations) to isolate physical energy drivers.
-* Automated multi-objective optimization (NSGA-II) mapping out the 3D Pareto Frontier across energy efficiency, thermal comfort, and construction costs.
-* Physics-based ground truth verification against pre-simulated DOE Commercial Reference Buildings.
+In conventional architectural design, the thermal performance of a proposed building is evaluated only after detailed blueprints are finalized, often leading to excessive operational energy usage and costly retrofitting. Whole-building thermodynamic simulation software (such as EnergyPlus) is computationally intensive, requiring detailed 3D building modeling and hours of simulation runtime.
+
+CloudXAi resolves this challenge by developing a machine learning surrogate system trained on 768 simulated residential building archetypes (the landmark **Tsanas & Xifara dataset** from the UCI Machine Learning Repository). The system accurately maps 8 architectural envelope parameters—including geometric compactness, wall and roof surface areas, overall height, building orientation, glazing area ratio, and glazing distribution—to continuous **Heating Load ($Y_1$)** and **Cooling Load ($Y_2$)** demands ($\text{kWh/m}^2$).
+
+By delivering instant inference ($< 50\text{ ms}$) with outstanding accuracy ($R^2 > 0.99$), the system serves as an interactive simulator allowing architects and engineers to test design variations before construction. The platform includes a clean scikit-learn preprocessing and feature engineering pipeline, rigorous baseline and advanced ensemble models (Gradient Boosting and tuned XGBoost), an interactive **Gradio Simulator** (`app.py`), and integration with **AWS S3** and **Amazon SageMaker**.
 
 ---
 
 ## 2. Team and Roles
 
-The team members of **CloudXAi (NHA-5-165)** and their primary technical responsibilities are detailed below:
+The project responsibilities are divided among the 5 team members according to the DEPI project milestones:
 
-| Member Name | Role | Track | Core Responsibilities |
-| :--- | :--- | :--- | :--- |
-| **Ahmed AbdElrahman Ahmed** | **Team Leader** | AI / Machine Learning | • Project coordination, timeline tracking, and repository governance.<br>• Dual-mode architecture, local/AWS deployment setup, and CI/CD pipelines.<br>• Model integration, end-to-end testing, and quality control. |
-| **Ahmed Mohamed Sayed Shehata** | **Team Member** | AI / Machine Learning | • Supervised regression modeling for Thermal Loads (LightGBM, XGBoost, MLP).<br>• Model tuning, cross-validation, and MLflow experiment tracking.<br>• Model evaluation against international benchmarks. |
-| **Eman Abo Al Qassem Abo Al Hjajj Omar** | **Team Member** | AI / Machine Learning | • Time-series data preparation and operational energy forecasting pipeline.<br>• Data validation, unit harmonization, and Star Schema Parquet lakehouse.<br>• Meteorological and temporal feature engineering (lags, degree days). |
-| **Manar Mahmoud Ahmed** | **Team Member** | AI / Machine Learning | • Multi-objective optimization engine (NSGA-II) implementation.<br>• FastAPI service development and model inference serving.<br>• Physics benchmark comparison against DOE reference models. |
-| **Ali Ahmed Ali Elmeleegy** | **Team Member** | AI / Machine Learning | • Interactive Streamlit Digital Twin Dashboard development.<br>• Explainable AI (SHAP waterfall & force plots) integration.<br>• Automated executive PDF report generation and UI user testing. |
+| Member Name | Project Role | Core Responsibilities |
+| :--- | :--- | :--- |
+| **Ahmed AbdElrahman Ahmed** | **Team Leader & Deployment Engineer** | • Overall project coordination, milestone scheduling, and GitHub repository management.<br>• Development of the interactive Gradio simulator (`app.py`) with A–E ratings and design optimizer.<br>• Integration with AWS S3 and SageMaker deployment workflows. |
+| **Manar Mahmoud Ahmed** | **Data & EDA Specialist** | • Ingestion and data quality audit of the 768-sample dataset.<br>• Exploratory data analysis (distributions, boxplots, correlation matrices, feature vs. target plots).<br>• Identification of multicollinearity among geometry features and summary reporting. |
+| **Ali Ahmed Ali Elmeleegy** | **Preprocessing & Feature Engineer** | • Design of leak-free 80/20 train/test split (`random_state=42`).<br>• Feature engineering: `Wall_Surface_Ratio` and `Glazing_x_Height`.<br>• Development and serialization of modular `src/preprocessing.py` and fitted preprocessor pipelines (`.joblib`). |
+| **Ahmed Mohamed Sayed Shehata** | **Basic Modeling Engineer** | • Implementation and benchmarking of baseline regression models (Linear Regression, Decision Tree, Random Forest).<br>• Evaluation via 5-fold cross-validation and holdout metrics (MAE, RMSE, $R^2$).<br>• Baseline performance reporting and error analysis. |
+| **Eman Abo Al Qassem Abo Al Hjajj Omar** | **Advanced Modeling Engineer** | • Implementation of advanced gradient-boosted ensembles (Gradient Boosting, XGBoost).<br>• Systematic hyperparameter tuning via `RandomizedSearchCV` with 5-fold CV.<br>• Feature importance analysis and model serialization (`xgb_heating_load.joblib`, `xgb_cooling_load.joblib`). |
 
 ---
 
 ## 3. Objectives and Success Criteria
 
-Each project objective is linked to rigorous, quantifiable Key Performance Indicators (KPIs):
+Each project objective is mapped to specific, measurable Key Performance Indicators (KPIs):
 
 | Objective ID | Objective Description | Target Metric / KPI | Threshold of Success |
 | :--- | :--- | :--- | :--- |
-| **O-01** | Build a robust, dual-mode Data Lakehouse supporting both local filesystem and AWS S3. | Pipeline Execution Time & Data Quality Score | • 100% schema validation compliance.<br>• Zero duplicate records or unhandled nulls.<br>• Local ETL pipeline runs in $< 60\text{ s}$ for benchmark dataset. |
-| **O-02** | Develop high-accuracy ML surrogate models for Heating Load and Cooling Load prediction. | Coefficient of Determination ($R^2$), MAE | • $R^2 \ge 0.95$ on holdout test set.<br>• $\text{MAE} \le 1.25\text{ kWh/m}^2$.<br>• Inference latency $< 250\text{ ms}$ per design query. |
-| **O-03** | Deliver weather-aware operational hourly energy forecasting on the ASHRAE GEPIII dataset. | ASHRAE Guideline 14 Metrics ($\text{CV(RMSE)}$, $\text{NMBE}$) | • $\text{CV(RMSE)} \le 15.0\%$ (Hourly).<br>• $\text{NMBE} \le \pm 5.0\%$.<br>• Temporal train/val/test split without look-ahead leakage. |
-| **O-04** | Implement a multi-objective Pareto optimization engine for envelope parameter trade-offs. | Hypervolume Indicator, Convergence Speed | • Generate valid 50-point Pareto Frontier in $< 3.0\text{ s}$.<br>• 100% adherence to architectural boundary constraints. |
-| **O-05** | Integrate Explainable AI (XAI) feature attribution and What-If simulation sandbox. | Explanation Completeness & User Latency | • SHAP local attribution computed in $< 300\text{ ms}$.<br>• What-If delta calculation ($\Delta\text{Energy}, \Delta\text{Cost}$) in real time. |
-| **O-06** | Deploy responsive web dashboard and REST API with full containerization. | Availability, Latency, Test Coverage | • System Uptime $> 99.0\%$.<br>• PyTest unit/integration test coverage $\ge 85\%$.<br>• One-command execution via `docker-compose up`. |
+| **O-01** | Data Quality & Integrity Validation | Completeness, Uniqueness, Outlier Verification | • 0 missing values, 0 duplicate rows across all 768 samples.<br>• Statistical distribution verification via IQR rule.<br>• Comprehensive EDA report generated with 7+ visualization artifacts. |
+| **O-02** | Reusable Preprocessing Pipeline | Data Leakage Prevention & Modularity | • Preprocessor fitted strictly on training data (80% split).<br>• Feature transformers (`StandardScaler`, `OneHotEncoder`, `FunctionTransformer`) packaged in `src/preprocessing.py`.<br>• Serialized pipelines saved to `processed/`. |
+| **O-03** | Baseline Model Benchmarking | Cross-Validated Performance (5-fold CV) | • Linear Regression $R^2 \ge 0.88$ (Cooling) and $\ge 0.92$ (Heating).<br>• Random Forest $R^2 \ge 0.96$ on both targets.<br>• Evaluation tables saved to `eda_outputs/basic_models_results.csv`. |
+| **O-04** | Advanced Model Optimization | Holdout Test Set Accuracy & Tuning Gains | • Tuned XGBoost Heating Load $R^2 \ge 0.998$, $\text{MAE} \le 0.30\text{ kWh/m}^2$.<br>• Tuned XGBoost Cooling Load $R^2 \ge 0.994$, $\text{MAE} \le 0.45\text{ kWh/m}^2$.<br>• Measurable gain over baseline models (Cooling $R^2$ improvement from 0.960 to 0.994). |
+| **O-05** | Interactive Simulator Deployment | Usability, Latency & Feature Completeness | • Real-time inference latency $< 100\text{ ms}$ on user input change.<br>• Full feature set: 12 building shapes, orientation/glazing selectors, A–E rating, sensitivity curves, and automated top-5 design optimizer. |
+| **O-06** | AWS Cloud Artifact Management | Reproducibility & Cloud Storage | • Storage of raw data, processed splits, and trained models in Amazon S3.<br>• Execution of modeling notebooks within Amazon SageMaker Notebook Instances. |
 
 ---
 
-## 4. Scope
+## 4. Scope Boundaries
 
-### 4.1 In-Scope Deliverables
-* **Data Engineering Subsystem:**
-  * Raw ingestion modules for Tsanas & Xifara architectural data, ASHRAE GEPIII hourly meters, and NOAA/Site weather feeds.
-  * Schema validation and unit conversion engine (Imperial to SI metric units: $\text{kWh/m}^2$, $^\circ\text{C}$, $\text{m/s}$).
-  * Dimensional Parquet lakehouse schema (`dim_building`, `dim_weather`, `dim_design_envelope`, `fact_energy_meter`, `fact_simulation_benchmark`).
-* **Machine Learning & Analytics Subsystem:**
-  * Comparative benchmark of 5 algorithms (Linear/Ridge, Random Forest, LightGBM, XGBoost, Multi-Layer Perceptron).
-  * Time-series feature engineering (cyclical hour/month encoding, rolling 24-hour weather means, heating/cooling degree days).
-  * Residual error analysis for operational building behavior diagnosis.
-  * TreeExplainer SHAP integration for global feature importance and local scenario attribution.
-* **Optimization & Decision Support Subsystem:**
-  * NSGA-II genetic algorithm optimizing window-to-wall ratio ($WWR$), orientation, compactness, and envelope U-values.
-  * Interactive What-If simulation sandbox computing real-time energy differentials.
-* **Software & Application Subsystem:**
-  * Modular FastAPI REST backend exposing documented OpenAPI endpoints.
-  * Multi-page Streamlit digital twin dashboard featuring interactive Plotly 2D/3D charts.
-  * Automated PDF diagnostic summary report generator.
-  * Containerized local deployment (Docker, Docker Compose) and AWS deployment scripts.
+### In-Scope:
+* Ingestion and validation of the 768 residential building designs from Tsanas & Xifara.
+* Dual continuous target regression (`Heating_Load` and `Cooling_Load`).
+* Feature engineering: `Wall_Surface_Ratio = Wall_Area / Surface_Area`, `Glazing_x_Height = Glazing_Area * Overall_Height`.
+* Comparison of 5 model architectures: Linear Regression, Decision Tree, Random Forest, Gradient Boosting, and XGBoost.
+* Hyperparameter optimization for XGBoost using `RandomizedSearchCV` across estimators, max_depth, learning_rate, and subsample.
+* Gradio-based web application (`app.py`) for live prediction and optimization.
+* Comprehensive technical documentation across all 4 DEPI stages in Markdown and DOCX.
 
-### 4.2 Out-of-Scope (Boundaries)
-* Physical hardware sensor deployment or edge micro-controller IoT flashing.
-* Structural engineering, foundation load-bearing calculations, or seismic risk modeling.
-* Dynamic electricity tariff rate bidding or utility energy trading.
-* Real-time 3D CFD airflow turbulence modeling inside rooms.
+### Out-of-Scope:
+* Dynamic time-series weather feeds (hourly solar irradiance, wind pressure sensors).
+* Operational meter readings from smart utility meters.
+* Physics engine co-simulation (live EnergyPlus socket connections during inference).
+* Commercial skyscraper architectures exceeding residential dimensional parameters.
 
 ---
 
 ## 5. Work Breakdown Structure (WBS)
 
-The project is structured hierarchically into 6 core work packages:
-
 ```
-1.0 Project Management & Architecture
-    1.1 Requirements gathering, stakeholder interview, and feasibility analysis
-    1.2 Dual-mode architecture design (Local / AWS abstraction)
-    1.3 Project tracking setup (GitHub Projects, Milestones, DoD)
-2.0 Data Engineering & Lakehouse Pipeline
-    2.1 Data acquisition (Architectural dataset, ASHRAE GEPIII, DOE models)
-    2.2 Data validation, cleaning, and schema enforcement rules
-    2.3 Dual-mode ETL engine (DuckDB / Polars for local; AWS Glue/Athena for cloud)
-    2.4 Feature engineering (compactness, solar exposure, lag terms, degree days)
-    2.5 Star Schema dimensional Parquet storage implementation
-3.0 Machine Learning & Surrogate Modeling
-    3.1 Thermal load multi-target regression pipeline & hyperparameter tuning
-    3.2 Time-series weather-aware energy forecasting pipeline
-    3.3 MLflow experiment tracking & model registry setup
-    3.4 Model evaluation against ASHRAE Guideline 14 standards
-    3.5 Model artifact serialization and inference wrapper
-4.0 Explainability & Optimization Engine
-    4.1 SHAP TreeExplainer integration for local & global feature attribution
-    4.2 NSGA-II multi-objective optimization engine implementation (PyMoo)
-    4.3 Pareto frontier filter and architectural constraint validator
-    4.4 What-if scenario simulation engine (parameter delta calculator)
-5.0 Application Layer & UI/UX Development
-    5.1 FastAPI backend service development & Pydantic schema validation
-    5.2 Streamlit interactive dashboard development (Overview, What-If, Pareto, XAI)
-    5.3 Automated PDF diagnostic summary report generation module
-    5.4 Docker and Docker-Compose containerization
-6.0 Verification, Testing & Academic Reporting
-    6.1 Automated unit, integration, and API contract testing (PyTest)
-    6.2 Physics-based validation against DOE Reference Building benchmarks
-    6.3 Technical documentation (SRS, SAD) and final presentation preparation
-```
+1.0 Project Management & Planning
+    1.1 Team formation, role definition, and repository setup
+    1.2 Project proposal and scope sign-off
+    1.3 Project schedule, WBS, and risk assessment
 
----
+2.0 Data Ingestion & Exploratory Data Analysis (EDA)
+    2.1 Raw dataset acquisition (UCI Energy Efficiency dataset)
+    2.2 Data quality checks (nulls, duplicates, data types, IQR outliers)
+    2.3 Univariate and bivariate analysis (histograms, boxplots, pairplots)
+    2.4 Correlation analysis and multicollinearity detection
+    2.5 Generation of EDA artifacts and summary documentation
 
-## 6. Milestones & Timeline (Gantt Chart Representation)
+3.0 Preprocessing & Feature Engineering
+    3.1 Train/Test split strategy (80/20 with random_state=42)
+    3.2 Domain-specific feature engineering (Wall_Surface_Ratio, Glazing_x_Height)
+    3.3 Modular Scikit-Learn Pipeline construction (StandardScaler, OneHotEncoder)
+    3.4 Serialization of processed datasets and transformer pipelines
 
-The project timeline strictly adheres to the official DEPI program schedule (October 2 – December 4, 2026):
+4.0 Model Development, Benchmarking & Hyperparameter Tuning
+    4.1 Baseline modeling: Linear Regression, Decision Tree, Random Forest
+    4.2 5-fold cross-validation and holdout evaluation (MAE, RMSE, R²)
+    4.3 Advanced modeling: Gradient Boosting and XGBoost
+    4.4 Hyperparameter tuning with RandomizedSearchCV
+    4.5 Feature importance evaluation and error residual analysis
+    4.6 Final model serialization (joblib)
 
-```mermaid
-gantt
-    title CloudXAi NHA-5-165 Project Timeline (DEPI 2026)
-    dateFormat  YYYY-MM-DD
-    axisFormat  %b %d
-
-    section S1: Planning & Management
-    Project Proposal & Team Roles       :done,    p1, 2026-10-02, 2026-10-09
-    WBS, Risk Register & KPIs           :done,    p2, 2026-10-09, 2026-10-16
-
-    section S2: Literature Review
-    Research Questions & Search Method  :done,    l1, 2026-10-09, 2026-10-13
-    Synthesis Matrix & Academic Report  :done,    l2, 2026-10-13, 2026-10-16
-
-    section S3: Requirements Gathering
-    Stakeholder Analysis & Personas     :done,    r1, 2026-10-09, 2026-10-13
-    User Stories, Use Cases & SRS Doc   :done,    r2, 2026-10-13, 2026-10-16
-
-    section S4: System Analysis & Design
-    Dual-Mode Architecture & Star Schema:active,  d1, 2026-10-09, 2026-10-23
-    UML Diagrams (DFD, Sequence, Class) :         d2, 2026-10-23, 2026-10-30
-    UI/UX Wireframes & API Spec         :         d3, 2026-10-30, 2026-11-06
-
-    section S5: Implementation & Execution
-    Data Engineering & Dual-Mode ETL    :         i1, 2026-10-16, 2026-10-31
-    ML Models, Surrogate & XAI          :         i2, 2026-10-24, 2026-11-15
-    Optimization Engine & FastAPI       :         i3, 2026-11-01, 2026-11-20
-    Streamlit Dashboard & Dockerization :         i4, 2026-11-10, 2026-11-30
-
-    section S6: Testing, Reports & Final Presentation
-    PyTest QA, EnergyPlus Validation    :         t1, 2026-11-16, 2026-11-30
-    Final Presentation & Demo Video     :         t2, 2026-11-25, 2026-12-04
+5.0 Deployment, Gradio Simulator & Cloud Integration
+    5.1 Interactive Gradio web application (app.py) development
+    5.2 Implementation of A–E energy efficiency classification and comparative charts
+    5.3 Design Optimizer module (exhaustive search over 768 archetypes)
+    5.4 Amazon S3 artifact storage and SageMaker notebook deployment
+    5.5 Final documentation generation (Markdown and DOCX deliverables)
 ```
 
-### Milestone Summary Table
+---
 
-| Milestone ID | Stage / Deliverable | Due Date (DEPI) | Lead Responsible | Deliverable Artifact |
-| :--- | :--- | :--- | :--- | :--- |
-| **M-01** | Stage 1: Project Planning & Management | 16 Oct 2026 | Ahmed AbdElrahman Ahmed | `CloudXAi_S1_ProjectPlan_v1.docx` |
-| **M-02** | Stage 2: Literature Review | 16 Oct 2026 | Ahmed Mohamed Sayed Shehata | `CloudXAi_S2_LiteratureReview_v1.docx` |
-| **M-03** | Stage 3: Requirements Gathering | 16 Oct 2026 | Eman Abo Al Qassem / Ali Elmeleegy | `CloudXAi_S3_SRS_v1.docx` |
-| **M-04** | Stage 4: System Analysis & Design | 06 Nov 2026 | Manar Mahmoud / Ahmed AbdElrahman | `CloudXAi_S4_SystemAnalysisAndDesign_v1.docx` |
-| **M-05** | Stage 5: Core Implementation & Docker | 30 Nov 2026 | All Team Members | Full GitHub Codebase & Docker Image |
-| **M-06** | Stage 6: Testing, Final Presentation & Report | 04 Dec 2026 | All Team Members | Final Slide Deck, PDF Report, Demo Video |
+## 6. Schedule & Milestone Timeline
+
+The project timeline spans 6 weeks, structured into sequential yet overlapping sprints:
+
+| Week | Milestone / Focus Area | Primary Deliverables | Lead |
+| :---: | :--- | :--- | :--- |
+| **W1** | **Sprint 1: Planning & EDA** | Project Proposal, Stage 1 Plan, Data Quality Report, EDA Plots (01–07) | Manar / Ahmed A. |
+| **W2** | **Sprint 2: Preprocessing Pipeline** | `src/preprocessing.py`, `train.csv`, `test.csv`, `preprocessor_*.joblib` | Ali |
+| **W3** | **Sprint 3: Baseline Modeling** | Linear Regression, Decision Tree, Random Forest models, 5-fold CV report | Ahmed S. |
+| **W4** | **Sprint 4: Advanced Models & Tuning** | Gradient Boosting, Tuned XGBoost (`xgb_*.joblib`), Feature Importance plot | Eman |
+| **W5** | **Sprint 5: Simulator Development** | Gradio App (`app.py`), KPI cards, Glazing sensitivity, Design optimizer | Ahmed A. |
+| **W6** | **Sprint 6: AWS & Final Reporting** | S3 bucket sync, SageMaker documentation, Final SRS, SAD, DOCX compilation | All Members |
 
 ---
 
-## 7. Tools and Collaboration
+## 7. Risk Management Register
 
-* **Version Control & Repository:** GitHub (`origin/main`, feature branching workflow `feature/feature-name`).
-* **Data Processing & Local Storage:** DuckDB, Apache Arrow, Polars, MinIO / LocalStack.
-* **Cloud Infrastructure (Optional / Cloud Profile):** AWS S3, AWS Glue, Amazon Athena, AWS SageMaker.
-* **Machine Learning & Optimization:** Scikit-Learn, LightGBM, XGBoost, PyTorch, PyMoo (NSGA-II), Optuna.
-* **Experiment Tracking:** MLflow (local artifact tracking server).
-* **Application Framework:** FastAPI (REST API), Streamlit (Frontend Dashboard), Plotly (Charts).
-* **Documentation & Diagrams:** Markdown, Mermaid.js, PlantUML, Draw.io.
-* **Testing & Quality Assurance:** PyTest, Flake8, Black, Pydantic v2.
-
----
-
-## 8. Communication Plan
-
-To maintain momentum and early conflict resolution, Team CloudXAi adheres to the following communication cadence:
-
-| Meeting Type | Frequency | Platform / Channel | Purpose & Agenda | Primary Output |
-| :--- | :--- | :--- | :--- | :--- |
-| **Daily Standup** | Mon–Thu (15 mins) | Discord / Slack | • What did you achieve yesterday?<br>• What will you work on today?<br>• Any technical blockers? | Discord task update log |
-| **Sprint Review & Planning** | Every Friday (1 hour) | Google Meet | • Demonstrate weekly completed deliverables.<br>• Review open Pull Requests.<br>• Plan next week's WBS priorities. | GitHub Milestone update |
-| **Mentor / Instructor Check-in** | Weekly (as scheduled) | Microsoft Teams | • Progress review with DEPI instructor.<br>• Feedback incorporation.<br>• Grade criteria verification. | Meeting action minutes |
+| Risk ID | Risk Description | Severity | Likelihood | Mitigation Strategy |
+| :---: | :--- | :---: | :---: | :--- |
+| **R-01** | **Severe Multicollinearity:** `Surface_Area`, `Roof_Area`, `Relative_Compactness`, and `Overall_Height` are mathematically interdependent. | High | High | Acknowledge multicollinearity impact on Linear Regression; leverage tree-based ensembles (Random Forest, XGBoost) which naturally handle correlated regressors without matrix instability. |
+| **R-02** | **Data Leakage in Feature Scaling:** Fitting transformers on the full dataset before splitting biases test metrics. | High | Low | Enforce strict isolation: split data into 80% train / 20% test before any transformation. Fit `ColumnTransformer` strictly on `X_train`. |
+| **R-03** | **Overfitting on Small Dataset:** With 768 rows, complex models may memorize training samples. | Medium | Medium | Use 5-fold cross-validation during tuning; constrain `max_depth` (3–6) and apply tree subsampling and learning rate shrinkage in XGBoost. |
+| **R-04** | **Inference Dependency Conflicts:** Serialization incompatibility between scikit-learn and XGBoost versions across environments. | Medium | Low | Pin exact dependency versions in `requirements.txt`; ensure same Python runtime (3.11/3.12) across local workstations and AWS SageMaker. |
+| **R-05** | **Cloud Resource Cost / Latency:** Over-provisioning AWS SageMaker instances leading to unnecessary credit exhaustion. | Low | Low | Utilize lightweight `ml.t3.medium` instances for notebook editing; run training locally or on transient on-demand CPU instances. |
+| **R-06** | **Discrepancy between Model Predictions and Physical Feasibility:** User selecting arbitrary incompatible geometry combinations. | Medium | Low | Pre-constrain the Gradio UI inputs to the 12 canonical building geometries verified in the dataset, auto-populating geometric dimensions when shape is selected. |
 
 ---
 
-## 9. Risk Register & Mitigation Plan
+## 8. Definition of Done (DoD)
 
-| Risk ID | Risk Description | Category | Likelihood | Impact | Mitigation Strategy | Contingency Plan |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **R-01** | **AWS Cloud Billing / Service Limits:** Student AWS credits exhaust, preventing cloud execution. | Cost / Cloud | High | High | • Architect dual-mode execution using DuckDB, LocalStack, and local Parquet.<br>• Local mode is 100% functional without an active AWS account. | Fall back to local Docker demo; use cloud mode only for recorded benchmarks. |
-| **R-02** | **Data Leakage in Time-Series:** Random cross-validation leaks future weather/meter data into past training. | Technical (ML) | Medium | High | • Strictly enforce chronological temporal split (e.g., Year 1 Train, Year 2 Val, Year 3 Test).<br>• Isolate unseen buildings into an out-of-sample test partition. | Automated data assertion checks in the PyTest ingestion test suite. |
-| **R-03** | **EnergyPlus Simulation Bottleneck:** Running physical EnergyPlus simulations on local machines hangs or crashes due to missing OS libraries. | Technical (Physics) | High | Medium | • Use pre-simulated DOE Commercial Reference Building datasets.<br>• Build an offline ML surrogate model trained on validated benchmark runs. | Provide pre-computed simulation result lookup tables in `data/samples/`. |
-| **R-04** | **Scope Creep (Too many ML tasks):** Attempting complex multi-layer transformers or real-time IoT causes delivery delays. | Management | Medium | High | • Pruned redundant BDG2 dataset; standardized on ASHRAE GEPIII.<br>• Demoted anomaly detection to a lightweight residual check.<br>• Enforce strict Definition of Done. | Cut non-essential stretch features immediately if timeline slips. |
-| **R-05** | **Multi-Objective Optimization Latency:** NSGA-II takes too long ($> 10\text{ s}$) to generate Pareto frontier during user interaction. | Performance | Medium | Medium | • Optimize surrogate inference vectorization using NumPy and LightGBM C-APIs.<br>• Cache frequently queried Pareto fronts. | Pre-generate and cache standard archetypal Pareto sets for quick exploration. |
-| **R-06** | **Incompatible Unit Standards:** Imperial units (Btu, sq ft, °F) in raw datasets mixed with Metric units ($W/m^2$, $m^2$, °C). | Data Quality | High | High | • Implement a dedicated unit standardization layer during ETL extraction.<br>• Assert unit validation rules before writing to Curated Parquet. | Automated pipeline rejects any batch failing unit consistency tests. |
-
----
-
-## 10. Definition of Done (DoD)
-
-A task or work package is considered **Done** only when all the following criteria are satisfied:
-1. **Code Standards:** Code adheres to PEP 8, formatted via `black`, linted with `flake8`, and has meaningful docstrings for all classes and functions.
-2. **Automated Testing:** Unit and integration tests written in `pytest` with $\ge 85\%$ test coverage across critical data processing and inference modules.
-3. **Reproducibility:** Code runs locally without manual path hacking; environment configuration managed cleanly through `.env` and `config.yaml`.
-4. **Documentation:** Documentation updated in Markdown and linked from `README.md`; API endpoints documented via OpenAPI / Swagger.
-5. **Code Review:** Pull Request approved by the Team Leader and at least one peer reviewer before merging into `main`.
+A milestone or feature is considered **Done** only when:
+1. Code adheres to PEP 8 standards and is committed to the project Git repository.
+2. The preprocessing pipeline runs deterministically without data leakage.
+3. Model evaluation reports cross-validated and holdout test metrics ($R^2$, MAE, RMSE).
+4. Serialized artifacts (`.joblib`, `.csv`) are versioned and loadable without errors.
+5. The Gradio simulator executes locally via `python app.py` without throwing runtime exceptions.
+6. Documentation is synchronized across both Markdown (`.md`) and Microsoft Word (`.docx`) formats.

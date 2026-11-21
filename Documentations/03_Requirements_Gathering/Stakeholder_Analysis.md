@@ -2,20 +2,18 @@
 **ML Diploma Graduation Project | Requirements Engineering**  
 **Team Name:** CloudXAi  
 **Team Code:** NHA-5-165  
-**Project Title:** AI-Based Building Energy Performance Evaluation & Design Optimization  
-**Document Version:** v1.0  
+**Project Title:** Building Energy Efficiency: Heating & Cooling Load Prediction  
+**Document Version:** v2.0 (Reconstructed)  
 
 ---
 
 ## 1. Executive Summary
 
-Stakeholder analysis identifies the key individuals, groups, and organizations impacted by or possessing influence over the **CloudXAi** platform. By categorizing their needs, pain points, expectations, and operational constraints, the system ensures high user adoption, clear functional alignment, and academic/industry compliance.
+Stakeholder analysis identifies the key individuals, professional user classes, and academic evaluators impacted by or possessing influence over the **Building Energy Efficiency Simulator**. By analyzing their operational requirements, pain points, and expectations, we ensure the system delivers immediate clinical and technical utility in sustainable architectural design workflows.
 
 ---
 
-## 2. Identified Stakeholders
-
-We have categorized five core stakeholder profiles:
+## 2. Stakeholder Power / Interest Matrix
 
 ```
 ┌────────────────────────────────────────────────────────────────────────┐
@@ -23,15 +21,15 @@ We have categorized five core stakeholder profiles:
 ├───────────────────────────────────┬────────────────────────────────────┤
 │ High Power / Low Interest (Keep   │ High Power / High Interest (Manage │
 │ Satisfied):                       │ Closely):                          │
-│ • SH-05: DEPI Academic & Industry │ • SH-01: Sustainable Architect     │
-│   Evaluator                       │ • SH-02: MEP / HVAC Energy         │
+│ • SH-04: DEPI Academic & Industry │ • SH-01: Sustainable Architect /   │
+│   Evaluator                       │   Building Designer                │
+│                                   │ • SH-02: MEP / HVAC Energy         │
 │                                   │   Consultant                       │
 ├───────────────────────────────────┼────────────────────────────────────┤
 │ Low Power / Low Interest (Monitor)│ Low Power / High Interest (Keep    │
-│ • Commercial Building Occupants   │ Informed):                         │
-│ • Utility Grid Providers          │ • SH-03: Facility Operations       │
-│                                   │   Manager                          │
-│                                   │ • SH-04: Cloud & MLOps Engineer    │
+│ • Building Code Regulatory Bodies │ Informed):                         │
+│ • General Public / Homeowners     │ • SH-03: Cloud & MLOps Engineer    │
+│                                   │ • SH-05: Green Building Auditor    │
 └───────────────────────────────────┴────────────────────────────────────┘
 ```
 
@@ -39,63 +37,47 @@ We have categorized five core stakeholder profiles:
 
 ## 3. Detailed Stakeholder Profiles
 
-### SH-01: Sustainable Building Architect (Lead Designer)
-* **Description:** Architectural practitioners responsible for initial spatial, geometric, and envelope conceptualization (massing, orientation, window placement, surface materials).
-* **Key Goals:**
-  * Rapidly assess energy implications during preliminary design workshops without waiting days for external engineering reports.
-  * Understand the trade-off between natural daylighting (glazing ratio) and thermal heating/cooling loads.
-* **Pain Points:**
-  * Complex physics simulation tools (like EnergyPlus) disrupt creative workflows due to difficult IDF input formats and long execution times.
-  * Lack of intuitive "What-If" sliders to see dynamic energy feedback when modifying envelope parameters.
-* **Success Metric:** Sub-second surrogate model feedback for design adjustments.
+### SH-01: Sustainable Architect & Building Designer
+* **Description:** Architectural practitioners responsible for building massing, geometry, orientation, and window placement during preliminary project phases.
+* **Core Objectives:**
+  * Test different building shapes and glazing ratios early in the design cycle before engineering drawings are locked.
+  * Receive immediate thermal load feedback (Heating & Cooling in $\text{kWh/m}^2$) without operating complex physics simulation software.
+* **Key Pain Points:**
+  * Whole-building simulation tools (EnergyPlus, OpenStudio) take hours to run and require complex CAD/IDF setups.
+  * Disconnect between architectural aesthetics (large windows) and severe heating/cooling energy penalties.
+* **System Requirement:** An intuitive web simulator with geometry presets, instant load calculation, and sensitivity charts.
 
-### SH-02: MEP & Building Energy Consultant
-* **Description:** Mechanical, Electrical, and Plumbing engineers charged with sizing HVAC equipment and verifying compliance with energy conservation codes (e.g., ASHRAE 90.1, LEED, local building codes).
-* **Key Goals:**
-  * Obtain rigorous, statistically reliable thermal load estimates ($R^2 \ge 0.95$, error margin $< 1.5\text{ kWh/m}^2$).
-  * Receive explainable justifications for design modifications to present to building owners and code officials.
-* **Pain Points:**
-  * Machine learning models are often "black boxes" that cannot be justified to regulatory boards or clients.
-  * Misleading claims in data science projects that equate thermal load estimates with utility electricity bills.
-* **Success Metric:** Transparent SHAP feature attribution charts and adherence to ASHRAE Guideline 14 standards.
+### SH-02: MEP / HVAC Energy Consultant
+* **Description:** Mechanical and HVAC engineers tasked with sizing heating and cooling systems and ensuring energy code compliance.
+* **Core Objectives:**
+  * Obtain high-fidelity baseline loads ($R^2 > 0.99$) to guide HVAC equipment capacity selection.
+  * Explore envelope optimization combinations that minimize peak thermal demand.
+* **Key Pain Points:**
+  * Over-sizing HVAC equipment due to lack of early envelope thermal estimates, driving up capital costs.
+  * Lack of transparent benchmark comparisons against dataset averages.
+* **System Requirement:** Clear energy rating metrics (Grades A to E), dataset benchmark comparisons, and access to underlying model accuracy tables.
 
-### SH-03: Facility & Building Operations Manager
-* **Description:** Operational personnel responsible for managing commercial HVAC schedules, monitoring smart meter electricity telemetry, and controlling utility operational expenses (OpEx).
-* **Key Goals:**
-  * Accurately forecast hourly energy consumption 24–168 hours in advance using weather forecasts to optimize peak-shaving strategies.
-  * Identify unexplained deviations between predicted baseline energy and actual metered consumption.
-* **Pain Points:**
-  * Unpredictable weather shifts lead to expensive utility peak-demand surcharges.
-  * Difficulty analyzing multi-year time-series smart meter datasets without complex data engineering setups.
-* **Success Metric:** Operational forecast accuracy with hourly $\text{CV(RMSE)} \le 15\%$.
+### SH-03: Cloud & MLOps Engineer
+* **Description:** Technical engineers responsible for reproducible training, artifact storage, and model deployment on AWS.
+* **Core Objectives:**
+  * Ensure clean, leak-free preprocessing pipelines with versioned artifact serialization (`.joblib`).
+  * Maintain efficient cloud storage on Amazon S3 and reproducible execution in SageMaker.
+* **Key Pain Points:**
+  * Incompatible Python package versions breaking model deserialization across local and cloud environments.
+* **System Requirement:** Pinned dependencies (`requirements.txt`), modular `src/preprocessing.py`, and cloud sync scripts.
 
-### SH-04: Cloud & MLOps Platform Engineer
-* **Description:** Software and data engineers responsible for maintaining data pipelines, model registries, containerized deployments, and cost efficiency across local and cloud environments.
-* **Key Goals:**
-  * Ensure the system runs cleanly on local workstations without mandatory cloud bills, while maintaining ready deployability to AWS.
-  * Automate data ingestion, schema validation, experiment tracking, and unit test coverage.
-* **Pain Points:**
-  * Cloud vendor lock-in preventing offline demonstrations or local unit testing.
-  * Undocumented data schema drifts or silent pipeline failures.
-* **Success Metric:** Seamless Dual-Mode execution (DuckDB/Local Parquet vs. AWS S3/Glue/Athena) with $\ge 85\%$ test coverage.
+### SH-04: DEPI Academic & Industry Evaluator
+* **Description:** Instructors and industry examiners evaluating the technical rigor, reproducibility, and business value of the graduation project.
+* **Core Objectives:**
+  * Verify that standard machine learning workflows are rigorously followed (EDA, preprocessing, cross-validation, hyperparameter tuning).
+  * Validate that model evaluation is honest, leak-free, and supported by full documentation.
+* **Key Pain Points:**
+  * Over-complicated or fabricated project scopes that lack running code or tangible results.
+* **System Requirement:** Clear code structure, runnable notebooks, verified test set metrics (MAE, RMSE, $R^2$), and comprehensive IEEE-format documentation.
 
-### SH-05: Academic & Industry Evaluator (DEPI Reviewer)
-* **Description:** Technical mentors, academic professors, and industry leaders evaluating the graduation project against official DEPI grading rubrics.
-* **Key Goals:**
-  * Verify end-to-end engineering excellence across Data Engineering, Machine Learning, Cloud Architecture, and Software Best Practices.
-  * Ensure comprehensive documentation, rigorous methodology, and complete traceability.
-* **Pain Points:**
-  * Superficial projects that only run a simple CSV through XGBoost without data lake architecture, validation, or physics-grounded validation.
-* **Success Metric:** 100% compliance with DEPI deliverable guidelines and professional code quality.
-
----
-
-## 4. Stakeholder Matrix Summary
-
-| Stakeholder ID | Role | Power | Interest | Primary Deliverable Needed | Engagement Cadence |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **SH-01** | Sustainable Architect | High | High | Interactive What-If Sandbox & 3D Pareto Explorer | Weekly design reviews |
-| **SH-02** | MEP Energy Consultant | High | High | SHAP XAI Diagnostics & Thermal Load Benchmarks | Bi-weekly engineering audits |
-| **SH-03** | Facility Operations Manager | Medium | High | Weather-Aware Hourly Energy Forecasting Module | Milestone demonstrations |
-| **SH-04** | Cloud & MLOps Engineer | Medium | High | Dual-Mode Data Lake, FastAPI, Docker, and CI/CD | Daily development commits |
-| **SH-05** | DEPI Academic Evaluator | High | High | Formal Deliverable Reports (S1–S4), Tests, and Slides | Scheduled DEPI gate reviews |
+### SH-05: Green Building Auditor & Rating Specialist
+* **Description:** LEED and national green building certification professionals assessing building efficiency categories.
+* **Core Objectives:**
+  * Quickly benchmark a proposed design against standardized energy quintiles (Grades A to E).
+  * Identify the top 5 most efficient designs across all parameter combinations.
+* **System Requirement:** Automated design optimizer and benchmark comparison against dataset minimums.

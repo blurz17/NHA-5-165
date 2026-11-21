@@ -2,170 +2,163 @@
 **ML Diploma Graduation Project | System Analysis & Design**  
 **Team Name:** CloudXAi  
 **Team Code:** NHA-5-165  
-**Project Title:** AI-Based Building Energy Performance Evaluation & Design Optimization  
-**Document Version:** v1.0  
+**Project Title:** Building Energy Efficiency: Heating & Cooling Load Prediction  
+**Document Version:** v2.0 (Reconstructed)  
 
 ---
 
-## 1. Architectural Vision & Design Principles
+## 1. Architectural Vision & Principles
 
-The **CloudXAi** architecture is designed around three non-negotiable principles:
-1. **Dual-Mode Parity (Zero Vendor Lock-In):** The entire system must function seamlessly on a developer's local machine without internet or AWS account dependencies, while being fully deployable to AWS using native cloud services.
-2. **Domain-Separated Workloads:** Explicit separation between architectural thermal-load estimation ($\text{kWh/m}^2$), operational meter electricity consumption ($\text{kWh}$), and physics-based EnergyPlus ground-truth verification.
-3. **Decoupled 4-Tier Component Architecture:** Clear boundary isolation between Data Storage & Lakehouse, Processing & Query Engine, Machine Learning & Optimization, and the Presentation Tier.
+The **Building Energy Efficiency Platform** is designed to provide high-accuracy, sub-second machine learning predictions of building heating and cooling loads directly from architectural geometry and envelope fenestration parameters. 
+
+The architecture is guided by three engineering principles:
+1. **Modularity & Reusability:** Core preprocessing and feature engineering logic is encapsulated within an isolated Python module (`src/preprocessing.py`), ensuring complete parity between training notebooks and deployment runtimes.
+2. **Deterministic Reproducibility:** Fixed random seeds, leak-free pipeline fitting on training partitions only, and pinned dependency versions (`requirements.txt`) ensure reproducible results across local workstations and cloud environments.
+3. **Decoupled 4-Tier Structure:** Distinct separation between Data Storage, Feature Transformation, Machine Learning Inference, and Presentation/Simulator tiers.
 
 ---
 
-## 2. High-Level Dual-Mode System Architecture
-
-The following diagram illustrates how the abstract storage and compute interfaces decouple the application logic from the underlying execution environment:
+## 2. High-Level System Architecture Diagram
 
 ```mermaid
 graph TD
-    subgraph DataSources["Heterogeneous Data Sources"]
-        DS1[Architectural Benchmark 768 Archetypes]
-        DS2[ASHRAE GEPIII 20M+ Hourly Meter Telemetry]
-        DS3[Coincident Meteorological Weather Observations]
-        DS4[DOE Commercial Reference Buildings]
+    subgraph DataTier["Data & Artifact Tier"]
+        D1[Raw Dataset: energy_efficiency_data.csv]
+        D2[Processed Splits: train.csv & test.csv]
+        D3[Fitted Transformers: preprocessor_tree.joblib]
+        D4[Trained Models: xgb_heating.joblib & xgb_cooling.joblib]
     end
 
-    subgraph AbstractionLayer["Data Lakehouse Storage Layer"]
-        subgraph LocalStorage["Local Profile (EXECUTION_MODE=local)"]
-            L1[Local Raw Zone data/raw/]
-            L2[Local Processed Parquet data/processed/]
-            L3[Local Curated Star Schema data/curated/]
-        end
-        subgraph CloudStorage["AWS Cloud Profile (EXECUTION_MODE=aws)"]
-            C1[S3 Raw Bucket s3://.../raw/]
-            C2[S3 Processed Parquet s3://.../processed/]
-            C3[S3 Curated Lakehouse s3://.../curated/]
-        end
+    subgraph PreprocessingTier["Preprocessing & Feature Engineering Tier (src/)"]
+        P1[add_features: Wall_Surface_Ratio & Glazing_x_Height]
+        P2[ColumnTransformer: StandardScaler & OneHotEncoder]
+        P3[Scikit-Learn Pipeline: prep_tree & prep_linear]
     end
 
-    subgraph QueryEngine["Query & ETL Engine"]
-        QE_Local[DuckDB / Polars In-Memory SQL]
-        QE_Cloud[AWS Glue ETL + Glue Catalog + Amazon Athena]
+    subgraph MLEngineTier["Machine Learning Inference Tier"]
+        M1[Tuned XGBoost Heating Regressor]
+        M2[Tuned XGBoost Cooling Regressor]
+        M3[Total Load Calculation: Y1 + Y2]
+        M4[Efficiency Quintile Classifier: Grades A to E]
     end
 
-    subgraph MLEngine["ML & Optimization Subsystem"]
-        ML1[Thermal Load Regressor LightGBM / XGBoost]
-        ML2[Time-Series Forecaster Lag + Weather Features]
-        ML3[NSGA-II Multi-Objective Optimizer PyMoo]
-        ML4[Explainable AI Engine SHAP TreeExplainer]
-        ML5[MLflow Experiment Tracker & Model Registry]
+    subgraph PresentationTier["Interactive Presentation Tier (app.py)"]
+        UI1[Tab 1: Interactive Simulator & Preset Shapes]
+        UI2[Tab 2: Combinatorial Design Optimizer 768 Configurations]
+        UI3[Tab 3: Model Performance Benchmark Tables]
+        UI4[Tab 4: Technical Documentation & About]
     end
 
-    subgraph PresentationTier["Application & Presentation Tier"]
-        API[FastAPI REST Service OpenAPI / Pydantic]
-        UI[Streamlit Digital Twin Interactive Dashboard]
-        PDF[Executive PDF Report Generator]
+    subgraph CloudTier["AWS Cloud Infrastructure"]
+        S3[Amazon S3: s3://bucket/energy-project/]
+        SM[Amazon SageMaker: Notebook Instance ml.t3.medium]
     end
 
-    DS1 & DS2 & DS3 & DS4 --> AbstractionLayer
-    LocalStorage --> QE_Local
-    CloudStorage --> QE_Cloud
-    QE_Local & QE_Cloud --> MLEngine
-    MLEngine --> PresentationTier
+    D1 --> P1
+    P1 --> P2 --> P3
+    P3 --> D2
+    P3 --> D3
+    D2 & D3 --> M1 & M2
+    M1 & M2 --> D4
+    D4 --> M3 --> M4
+    M3 & M4 --> PresentationTier
+    DataTier <--> S3
+    PreprocessingTier & MLEngineTier <--> SM
 ```
 
 ---
 
-## 3. Detailed Component Breakdown (4-Tier Architecture)
+## 3. Tier-by-Tier Architectural Breakdown
 
-### Tier 1: Ingestion & Storage Abstraction Tier
-* **Data Access Layer (DAL):** Implements a unified Python repository pattern (`StorageRepository`). When reading or writing datasets, the application calls `get_table(table_name)` without knowing whether the underlying target is a local file path (`data/curated/dim_building.parquet`) or an Amazon S3 URI (`s3://building-energy-lakehouse-nha165/curated/dim_building/`).
-* **Columnar Storage:** All processed and curated tables are persisted as Snappy-compressed Apache Parquet, enforcing high compression ratios ($> 75\%$) and rapid columnar predicate pushdown.
+### 3.1 Data & Storage Tier
+* **Raw Storage:** `data/energy_efficiency_data.csv` (768 rows, 10 columns).
+* **Processed Partition Storage:** `processed/train.csv` (614 rows) and `processed/test.csv` (154 rows).
+* **Serialized Pipelines:** `processed/preprocessor_tree.joblib` and `processed/preprocessor_linear.joblib`.
+* **Model Binaries:** `models/xgb_heating_load.joblib` and `models/xgb_cooling_load.joblib`.
 
-### Tier 2: Transformation & Query Engine Tier
-* **Local Mode:** Uses **DuckDB**, an embedded analytical SQL engine. DuckDB executes complex joins and aggregations directly on local Parquet files with zero operational overhead, providing full SQL compatibility with Amazon Athena.
-* **AWS Cloud Mode:** Ingestion scripts copy files to S3. **AWS Glue Crawlers** automatically infer schemas and update the **AWS Glue Data Catalog**. Heavy distributed transformations run via Glue PySpark jobs, and analytical ad-hoc queries are executed via **Amazon Athena**.
+### 3.2 Preprocessing & Feature Engineering Tier (`src/preprocessing.py`)
+Encapsulates all transformations in a leak-free `sklearn.pipeline.Pipeline`:
+```python
+def add_features(X, engineer=True, drop=()):
+    X = X.copy()
+    if engineer:
+        X["Wall_Surface_Ratio"] = X["Wall_Area"] / X["Surface_Area"]
+        X["Glazing_x_Height"] = X["Glazing_Area"] * X["Overall_Height"]
+    return X.drop(columns=list(drop))
+```
+* **Tree Pipeline (`prep_tree`):** Passthrough scaling and encoding, adding interaction features.
+* **Linear Pipeline (`prep_linear`):** `StandardScaler` for numeric columns, `OneHotEncoder` for categorical orientations and glazing distributions.
 
-### Tier 3: Machine Learning & Optimization Subsystem
-* **Thermal Surrogate Estimator:** A multi-output ensemble (LightGBM / XGBoost) trained on geometric envelope features to predict Heating Load and Cooling Load in $< 250\text{ ms}$.
-* **Time-Series Forecaster:** A temporal gradient-boosted forecaster trained on the ASHRAE GEPIII dataset, combining cyclical time features, temperature degree-days, and rolling weather windows.
-* **Pareto Optimizer (PyMoo NSGA-II):** Evaluates candidate envelope configurations across 50 generations in $< 3.0\text{ seconds}$, powered by vectorized surrogate calls.
-* **XAI Explainer (SHAP TreeExplainer):** Calculates exact game-theoretic feature attributions for any design instance in $< 300\text{ ms}$.
-* **MLflow Tracking Server:** Logs parameters, metrics ($R^2$, $\text{MAE}$, $\text{CV(RMSE)}$), and model versions locally (`mlruns/`) or to an Amazon S3 backend.
+### 3.3 Machine Learning Inference Tier
+* Two dedicated tuned XGBoost regressors loaded into memory via `joblib`:
+  - `m_heat`: Predicts Heating Load ($Y_1$, $\text{kWh/m}^2$).
+  - `m_cool`: Predicts Cooling Load ($Y_2$, $\text{kWh/m}^2$).
+* Execution latency is $< 20\text{ ms}$ for single-sample inference and $< 300\text{ ms}$ for the full 768-sample combinatorial sweep.
 
-### Tier 4: Presentation & API Tier
-* **FastAPI Service:** Asynchronous, non-blocking REST API exposing typed endpoints validated via Pydantic v2 schemas.
-* **Streamlit Digital Twin UI:** Multi-page dashboard with real-time reactive sliders, 2D/3D Plotly surfaces, and dynamic scenario comparison.
-* **ReportLab PDF Exporter:** Generates self-contained, publication-ready PDF audit reports summarizing evaluated designs and Pareto recommendations.
+### 3.4 Presentation & Interactive Simulator Tier (`app.py`)
+Built using Gradio with custom CSS styling (`teal` theme):
+* **Geometry Presets:** 12 unique shapes sorted by relative compactness. Selecting a shape auto-populates exact geometry dimensions.
+* **KPI Metrics:** Real-time calculation of Heating, Cooling, Total Load, and A–E Grade.
+* **Visual Plots:** Matplotlib-rendered stacked bar chart (comparison against average and best design) and glazing sensitivity curve.
+* **Design Optimizer:** In-memory Pandas vectorized filtering over the 768 designs.
 
 ---
 
-## 4. System Deployment Models
+## 4. Deployment Strategies
 
-### 4.1 Local Deployment Architecture (Docker & LocalStack)
+### 4.1 Local Standalone Deployment (Primary Development Mode)
+Run directly on developer workstations without cloud connectivity:
+```bash
+# 1. Clone repository
+git clone <repo-url>
+cd AWS.ML.Project
 
-The local deployment runs on any modern multi-core PC using Docker Compose:
+# 2. Install pinned dependencies
+pip install -r requirements.txt
 
-```mermaid
-graph LR
-    subgraph HostMachine["Developer Workstation / Evaluator Laptop"]
-        subgraph DockerCompose["Docker Compose Network: cloudxai-net"]
-            API_Container["FastAPI Container (Port 8000)"]
-            UI_Container["Streamlit Container (Port 8501)"]
-            MLflow_Container["MLflow UI Container (Port 5000)"]
-        end
-        LocalStorageVol["Mounted Local Storage (data/ & models/)"]
-    end
+# 3. Launch Gradio simulator
+python app.py
+```
+The application initializes on `http://127.0.0.1:7860`, binding locally and offering immediate browser interactivity.
 
-    UserBrowser[User Web Browser] -->|HTTP 8501| UI_Container
-    UI_Container -->|Internal HTTP 8000| API_Container
-    API_Container --> LocalStorageVol
-    MLflow_Container --> LocalStorageVol
+### 4.2 AWS Cloud Deployment
+
+```
+[ Local Developer Environment ]
+             │
+             │ AWS CLI / Boto3 Sync
+             ▼
+    [ Amazon S3 Bucket ]
+    s3://<bucket>/energy-project/
+    ├── raw/energy_efficiency_data.csv
+    ├── processed/train.csv, test.csv
+    └── models/xgb_*.joblib
+             │
+             │ S3 Sync / CloudWatch
+             ▼
+[ Amazon SageMaker Notebook Instance ]
+  - Instance Type: ml.t3.medium (or ml.m5.large)
+  - Execution of Energy_project.ipynb
+  - Hyperparameter tuning with RandomizedSearchCV
+             │
+             │ Container Build (Dockerfile)
+             ▼
+[ Containerized Serving (Optional) ]
+  - AWS App Runner / Amazon ECS / EC2
+  - Port 7860 exposed via Application Load Balancer (ALB)
 ```
 
-* **Setup Command:** `docker-compose up --build -d`
-* **Resource Profile:** 4 CPU cores, 4 GB RAM, 2 GB disk space.
-
-### 4.2 AWS Production Deployment Architecture
-
-For cloud deployment, the same containers deploy to AWS managed services with zero code rewrites:
-
-```mermaid
-graph TD
-    subgraph AWSCloud["Amazon Web Services (AWS)"]
-        subgraph Ingestion["Ingestion & Lakehouse"]
-            S3Raw["S3: /raw/"]
-            GlueETL["AWS Glue ETL Job"]
-            S3Curated["S3: /curated/ (Parquet)"]
-            GlueCatalog["AWS Glue Data Catalog"]
-            Athena["Amazon Athena (SQL Query)"]
-        end
-
-        subgraph Compute["App Execution & Container Hosting"]
-            ALB["Application Load Balancer"]
-            ECS_FastAPI["AWS ECS / App Runner: FastAPI Backend"]
-            ECS_Streamlit["AWS ECS / App Runner: Streamlit Frontend"]
-            SageMaker["AWS SageMaker (Model Registry / Batch)"]
-        end
-    end
-
-    InternetUsers[Architects & Energy Consultants] --> ALB
-    ALB --> ECS_Streamlit
-    ECS_Streamlit --> ECS_FastAPI
-    ECS_FastAPI --> Athena
-    ECS_FastAPI --> S3Curated
-    S3Raw --> GlueETL --> S3Curated
-    S3Curated --> GlueCatalog --> Athena
-    SageMaker --> S3Curated
-```
+1. **Amazon S3 (Artifact Store):** Centralized versioned storage for datasets, preprocessors, and trained models.
+2. **Amazon SageMaker (Training Environment):** Jupyter environment running on `ml.t3.medium` instances with Python 3.11+, providing collaborative notebook execution and cross-validation tracking.
+3. **Containerized Hosting:** The application can be packaged into a lightweight Docker container (`python:3.12-slim`) and hosted on **AWS App Runner** or **Amazon EC2** for public web access.
 
 ---
 
-## 5. Technology Stack Summary
+## 5. Security, Reliability & Failure Modes
 
-| Layer | Local Profile Technology | AWS Cloud Profile Technology | Role / Responsibility |
-| :--- | :--- | :--- | :--- |
-| **Object / File Storage** | Local File System / MinIO | Amazon S3 | Immutable raw files, processed partitions, curated lakehouse. |
-| **Data Catalog & SQL** | DuckDB + Polars | AWS Glue Catalog + Amazon Athena | High-speed analytical queries, schema discovery, partition pruning. |
-| **ETL Engine** | DuckDB Python + PySpark Local | AWS Glue (PySpark Serverless) | Data validation, cleaning, unit standardization, lag engineering. |
-| **Model Tracking** | MLflow Local Server (`mlruns/`) | AWS SageMaker / Managed MLflow | Hyperparameter logging, metrics comparison, model registry. |
-| **Machine Learning** | LightGBM, XGBoost, Scikit-learn | Same + SageMaker Inference | Multi-target surrogate regression & operational energy forecasting. |
-| **Optimization** | PyMoo (NSGA-II) | PyMoo (NSGA-II) | Multi-objective genetic optimization and Pareto frontier discovery. |
-| **Explainable AI** | SHAP (TreeExplainer) | SHAP (TreeExplainer) | Game-theoretic local and global feature attribution. |
-| **Backend REST API** | FastAPI + Uvicorn + Pydantic v2 | AWS ECS / App Runner | High-performance asynchronous API serving endpoints. |
-| **Frontend UI** | Streamlit + Plotly | AWS ECS / App Runner | Interactive Digital Twin dashboard with 2D/3D visualizations. |
-| **Containerization** | Docker + Docker Compose | AWS ECR + ECS Fargate | Reproducible application packaging and orchestration. |
+| Potential Failure Mode | Root Cause | Architectural Mitigation |
+| :--- | :--- | :--- |
+| **Model Incompatible Deserialization** | Mismatched scikit-learn or XGBoost runtime versions. | Pinned version specs in `requirements.txt`; validated compatibility tests in CI. |
+| **Out-of-Bounds User Input** | User inputs physically impossible geometry values. | Input controls constrained to verified 12 shapes; dropdown selections prevent arbitrary inputs. |
+| **Inference Timeout in Optimizer** | Searching across large design spaces. | Vectorized batch inference: all 768 designs pre-computed at application startup and cached in an in-memory DataFrame. |
+| **S3 Access Denied** | Misconfigured IAM permissions. | Minimal least-privilege IAM policy granting `s3:GetObject` and `s3:PutObject` strictly on the project prefix. |
