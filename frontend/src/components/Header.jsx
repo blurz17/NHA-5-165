@@ -36,17 +36,17 @@ export default function Header({ activeTab, setActiveTab, backendOnline = true }
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <h1 style={{
-              fontSize: '18px',
+              fontSize: '19px',
               fontWeight: '800',
-              letterSpacing: '-0.03em',
-              background: isDark
-                ? 'linear-gradient(135deg, #ffffff 0%, #cbd5e1 100%)'
-                : 'linear-gradient(135deg, #0f172a 0%, #334155 100%)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              margin: 0
+              letterSpacing: '-0.02em',
+              color: isDark ? '#ffffff' : '#0f172a',
+              margin: 0,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px'
             }}>
-              THERMOX <span style={{ WebkitTextFillColor: '#38bdf8' }}>AI</span>
+              <span>THERMOX</span>
+              <span style={{ color: '#0ea5e9' }}>AI</span>
             </h1>
             
             {/* Live Backend Indicator */}
