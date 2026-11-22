@@ -217,28 +217,22 @@ Frontend will be live at `http://localhost:5173`.
 
 ## 5. Deployment Guide
 
-### A. Deploy Backend to Heroku
-1. Make sure `Procfile` is present in the repository root:
-   ```
-   web: uvicorn backend.app.main:app --host 0.0.0.0 --port $PORT
-   ```
-2. Deploy via Heroku CLI:
-   ```bash
-   heroku login
-   heroku create energy-efficiency-api
-   git push heroku main
-   ```
-3. Your Heroku backend URL will be: `https://energy-efficiency-api.herokuapp.com`
+Full detailed instructions are available in [docs/deployment_guide.md](docs/deployment_guide.md).
+
+### A. Deploy Backend to Render (Recommended) or Heroku
+* **Render (FastAPI)**:
+  * Uses the included [`render.yaml`](render.yaml) blueprint file for 1-click deployment.
+  * Start Command: `uvicorn backend.app.main:app --host 0.0.0.0 --port $PORT`
+  * Health check: `/api/health`
+* **Heroku**:
+  * Uses the included [`Procfile`](Procfile): `web: uvicorn backend.app.main:app --host 0.0.0.0 --port $PORT`
 
 ### B. Deploy Frontend to Vercel
-1. In `frontend/vercel.json`, verify the backend rewrite URL points to your deployed Heroku app.
-2. In the `frontend` directory, deploy using Vercel CLI or via GitHub integration:
-   ```bash
-   cd frontend
-   vercel
-   ```
-3. Set Environment Variable in Vercel project settings:
-   - `VITE_API_URL` = `https://energy-efficiency-api.herokuapp.com/api`
+1. Import repository in Vercel.
+2. In Project Settings, set **Root Directory** to `frontend`.
+3. Add Environment Variable:
+   * `VITE_API_URL` = `https://<your-backend-app>.onrender.com` (or Heroku URL)
+4. Deploy! Vercel handles automated builds and edge routing with [`frontend/vercel.json`](frontend/vercel.json).
 
 ---
 

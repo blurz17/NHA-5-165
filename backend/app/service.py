@@ -1,100 +1,59 @@
-"""Model loading and prediction service layer."""
+"""
+Model loading and prediction service layer.
+Directly uses the bundled models from artifacts/production/model_bundle.joblib.
+"""
 
 import os
 import joblib
 import pandas as pd
-import numpy as np
 from typing import Dict, Any, List
 
-from .config import MODEL_BUNDLE_PATH, CANDIDATES_DIR
+from .config import MODEL_BUNDLE_PATH
 from .schemas import (
     BuildingFeatures, PredictionRequest, PredictionResponse, LoadPrediction,
-    OptimizationRequest, OptimizationResponse, OptimizationResult, ModelInfo
+    OptimizationRequest, OptimizationResponse, OptimizationResult
 )
 
 
 class ModelService:
-    """Manages model loading, preprocessor execution, and inference."""
+    """Loads model_bundle.joblib and runs inference for Heating and Cooling loads."""
 
     def __init__(self):
-        self.bundle: Dict[str, Any] = {}
-        self.is_loaded: bool = False
-        self.load_models()
-
-    def load_models(self):
-        """Load production model bundle or individual candidate joblibs."""
-        if os.path.exists(MODEL_BUNDLE_PATH):
-            try:
-                self.bundle = joblib.load(MODEL_BUNDLE_PATH)
-                self.is_loaded = True
-                print(f"[ModelService] Loaded production bundle from {MODEL_BUNDLE_PATH}")
-                return
-            except Exception as e:
-                print(f"[ModelService] Failed to load production bundle: {e}")
-
-        # Fallback to candidate joblib loading if bundle is not yet generated
-        print(f"[ModelService] Fallback: checking candidate models in {CANDIDATES_DIR}")
-        self.bundle = {
-            "models": {"heating": {}, "cooling": {}, "multioutput": {}},
-            "preprocessors": {},
-            "metadata": {}
-        }
+        # Load the production bundle (contains all 10 models + 2 preprocessors + metadata)
+        if not os.path.exists(MODEL_BUNDLE_PATH):
+            raise FileNotFoundError(f"Production model bundle not found at {MODEL_BUNDLE_PATH}")
+        self.bundle = joblib.load(MODEL_BUNDLE_PATH)
+        self.is_loaded = True
+        print(f"[ModelService] Successfully loaded model bundle from {MODEL_BUNDLE_PATH}")
 
     def predict(self, request: PredictionRequest) -> PredictionResponse:
-        """Execute prediction for a given set of building features and chosen algorithm."""
-        if not self.is_loaded:
-            self.load_models()
-
-        feats_dict = request.features.model_dump()
-        df_in = pd.DataFrame([feats_dict])
-
-        # Compute engineered features for transparency
-        wall_surface_ratio = round(feats_dict["Wall_Area"] / feats_dict["Surface_Area"], 4)
-        glazing_x_height = round(feats_dict["Glazing_Area"] * feats_dict["Overall_Height"], 4)
-        eng_features = {
-            "Wall_Surface_Ratio": wall_surface_ratio,
-            "Glazing_x_Height": glazing_x_height
-        }
-
+        """
+        1. Select appropriate preprocessor ('linear' or 'tree')
+        2. Retrieve target models ('heating' and 'cooling') for the chosen algorithm
+        3. Transform inputs and compute predictions
+        """
         algo = request.algorithm or "Random Forest"
 
-        # Determine preprocessor and models
-        heating_model = None
-        cooling_model = None
-        multioutput_model = None
-        preprocessor = None
+        # Linear regression uses scaled/one-hot pipeline; tree models use unscaled pipeline
+        prep_key = "linear" if algo == "Linear Regression" else "tree"
+        preprocessor = self.bundle["preprocessors"][prep_key]
 
-        if self.is_loaded:
-            is_linear = (algo == "Linear Regression")
-            prep_key = "linear" if is_linear else "tree"
-            preprocessor = self.bundle.get("preprocessors", {}).get(prep_key)
+        # Retrieve the individual target models for the selected algorithm
+        model_heating = self.bundle["models"]["heating"][algo]
+        model_cooling = self.bundle["models"]["cooling"][algo]
 
-            heating_dict = self.bundle.get("models", {}).get("heating", {})
-            cooling_dict = self.bundle.get("models", {}).get("cooling", {})
-            multi_dict = self.bundle.get("models", {}).get("multioutput", {})
+        # Convert input dictionary to 1-row DataFrame and transform
+        df_in = pd.DataFrame([request.features.model_dump()])
+        X_trans = preprocessor.transform(df_in)
 
-            heating_model = heating_dict.get(algo)
-            cooling_model = cooling_dict.get(algo)
-            multioutput_model = multi_dict.get(algo)
-
-        # Fallback heuristic calculation if models are unavailable
-        if preprocessor is not None and heating_model is not None and cooling_model is not None:
-            X_trans = preprocessor.transform(df_in)
-            heat_pred = float(heating_model.predict(X_trans)[0])
-            cool_pred = float(cooling_model.predict(X_trans)[0])
-        elif preprocessor is not None and multioutput_model is not None:
-            X_trans = preprocessor.transform(df_in)
-            pred_arr = multioutput_model.predict(X_trans)
-            heat_pred = float(pred_arr[0][0])
-            cool_pred = float(pred_arr[0][1])
-        else:
-            # Baseline estimation if models not yet compiled on disk
-            heat_pred = 2.5 * feats_dict["Overall_Height"] + 0.03 * feats_dict["Surface_Area"]
-            cool_pred = heat_pred * 1.05
-
-        heat_pred = round(max(0.0, heat_pred), 2)
-        cool_pred = round(max(0.0, cool_pred), 2)
+        # Run predictions
+        heat_pred = round(float(model_heating.predict(X_trans)[0]), 2)
+        cool_pred = round(float(model_cooling.predict(X_trans)[0]), 2)
         total_pred = round(heat_pred + cool_pred, 2)
+
+        # Compute engineered feature values for UI display
+        wall_ratio = round(request.features.Wall_Area / request.features.Surface_Area, 4)
+        glazing_h = round(request.features.Glazing_Area * request.features.Overall_Height, 4)
 
         return PredictionResponse(
             success=True,
@@ -104,12 +63,15 @@ class ModelService:
                 total_load_kwh=total_pred,
                 algorithm_used=algo
             ),
-            input_received=feats_dict,
-            engineered_features=eng_features
+            input_received=request.features.model_dump(),
+            engineered_features={
+                "Wall_Surface_Ratio": wall_ratio,
+                "Glazing_x_Height": glazing_h
+            }
         )
 
     def optimize(self, request: OptimizationRequest) -> OptimizationResponse:
-        """Search parameter space to identify optimal design with lowest thermal demand."""
+        """Evaluate parameter sweep across candidate values to find minimum energy design."""
         param = request.optimize_param
         base = request.base_features.model_dump()
 
@@ -170,5 +132,5 @@ class ModelService:
         ]
 
 
-# Singleton instance
+# Singleton instance loaded on backend startup
 service = ModelService()

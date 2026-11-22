@@ -15,7 +15,7 @@ from .service import service
 app = FastAPI(
     title=APP_NAME,
     version=APP_VERSION,
-    description="Building Energy Efficiency Heating & Cooling Load Prediction API. Deployed on Heroku, integrated with Vercel Frontend.",
+    description="Building Energy Efficiency Heating & Cooling Load Prediction API. Deployed on Render/Heroku, integrated with Vercel Frontend.",
     docs_url="/docs",
     redoc_url="/redoc"
 )
@@ -30,7 +30,7 @@ app.add_middleware(
 )
 
 
-@app.get("/", tags=["General"])
+@app.api_route("/", methods=["GET", "HEAD", "POST"], tags=["General"])
 def root():
     return {
         "app": APP_NAME,
@@ -41,7 +41,8 @@ def root():
     }
 
 
-@app.get("/api/health", response_model=HealthResponse, tags=["General"])
+@app.api_route("/api/health", methods=["GET", "HEAD", "POST"], response_model=HealthResponse, tags=["General"])
+@app.api_route("/health", methods=["GET", "HEAD", "POST"], response_model=HealthResponse, tags=["General"])
 def health_check():
     return HealthResponse(
         status="ok",
@@ -65,6 +66,17 @@ def predict_loads(request: PredictionRequest):
         raise HTTPException(status_code=500, detail=f"Inference error: {str(e)}")
 
 
+@app.api_route("/api/predict", methods=["GET", "HEAD"], tags=["Prediction"])
+def predict_get_ping():
+    """Allows GET/HEAD pings (e.g. cron-job.org / uptime monitors) without returning 405 Method Not Allowed."""
+    return {
+        "status": "online",
+        "endpoint": "/api/predict",
+        "method_required": "POST",
+        "message": "Send a POST request with building features JSON to generate predictions. For health monitoring, use GET /api/health."
+    }
+
+
 @app.post("/api/optimize", response_model=OptimizationResponse, tags=["Optimization"])
 def optimize_design(request: OptimizationRequest):
     try:
@@ -73,7 +85,18 @@ def optimize_design(request: OptimizationRequest):
         raise HTTPException(status_code=500, detail=f"Optimization error: {str(e)}")
 
 
-@app.get("/api/models", tags=["Model Registry"])
+@app.api_route("/api/optimize", methods=["GET", "HEAD"], tags=["Optimization"])
+def optimize_get_ping():
+    """Allows GET/HEAD pings without returning 405 Method Not Allowed."""
+    return {
+        "status": "online",
+        "endpoint": "/api/optimize",
+        "method_required": "POST",
+        "message": "Send a POST request with optimization parameters. For health monitoring, use GET /api/health."
+    }
+
+
+@app.api_route("/api/models", methods=["GET", "HEAD"], tags=["Model Registry"])
 def list_models():
     return {
         "total_models": 10,

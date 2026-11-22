@@ -1,9 +1,12 @@
 """Backend configuration and environment settings."""
 
 import os
+import sys
 
 # Root directory of the repository
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+if BASE_DIR not in sys.path:
+    sys.path.insert(0, BASE_DIR)
 
 # Model bundle path (production)
 MODEL_BUNDLE_PATH = os.path.join(BASE_DIR, "artifacts", "production", "model_bundle.joblib")
